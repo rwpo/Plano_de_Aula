@@ -17,8 +17,8 @@
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; color: black !important; }
-            #modalVisualizacao { position: static !important; background: transparent !important; p: 0 !important; }
-            #modalVisualizacao > div { max-width: 100% !important; shadow: none !important; p: 0 !important; border: none !important; }
+            #modalVisualizacao { position: static !important; background: transparent !important; padding: 0 !important; }
+            #modalVisualizacao > div { max-width: 100% !important; box-shadow: none !important; padding: 0 !important; border: none !important; }
         }
     </style>
     <script>
@@ -70,6 +70,11 @@
           img.classList.remove('hidden');
           text.textContent = "";
         }
+        
+        // Salva a URL para persistência local
+        try {
+          localStorage.setItem('cabecalhoUrlSalva', url);
+        } catch (e) {}
       };
 
       function alertPersonalizado(mensagem) {
@@ -108,12 +113,12 @@
             <div class="flex flex-wrap items-center gap-3">
                 <div id="statusFirebaseBadge" class="bg-indigo-800/80 border border-indigo-600 text-xs px-3 py-1.5 rounded-full flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-400" id="dotStatusFirebase"></span>
-                    <span id="txtStatusFirebase" class="font-medium text-indigo-100">Firebase Conectado</span>
+                    <span id="txtStatusFirebase" class="font-medium text-indigo-100">Matemática: 247 | Libras: 454</span>
                 </div>
                 
                 <button id="btnSubirMatriz" onclick="sincronizarMatrizComFirebase()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-2">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span id="txtBtnSubirMatriz">Subir Matriz Curricular</span>
+                    <span id="txtBtnSubirMatriz">Subir Matriz Curricular (701 Códigos)</span>
                 </button>
             </div>
         </div>
@@ -146,7 +151,7 @@
                                oninput="tratarEAtualizarPreviewCabecalho()"
                                class="flex-1 text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
                         <button type="button" onclick="testarUrlCabecalho()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3 py-2 rounded-lg font-medium transition">
-                            Testar Link
+                            Salvar & Testar
                         </button>
                     </div>
                     <div class="mt-3 flex items-center justify-center bg-white border border-dashed border-slate-300 rounded-lg p-3 min-h-[70px]">
@@ -186,7 +191,7 @@
                         </div>
                         <div class="md:col-span-7">
                             <div id="boxLeituraHabilidade" class="bg-white border border-indigo-200 rounded-lg p-3 text-xs text-slate-700 min-h-[50px] shadow-inner flex items-center">
-                                <span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>
+                                <span class="text-slate-400 italic">A descrição completa da habilidade e seu eixo aparecerão aqui ao ser selecionada...</span>
                             </div>
                         </div>
                     </div>
@@ -328,7 +333,6 @@
 
       // Configuração de segurança e fallback de transporte para o GitHub Pages
       try {
-        // Força o fallback para HTTP Long-Polling se o WebSocket for bloqueado pelo GitHub Pages
         if (firebase.database.INTERNAL && firebase.database.INTERNAL.forceWebSockets) {
           firebase.database.INTERNAL.forceWebSockets(false);
         }
@@ -341,32 +345,50 @@
       let planosSalvos = {};
       let datasBlocoAulas = [];
 
+      // Mapeamento de Eixos para Matemática e Libras
+      function obterEixoMatematica(codigo) {
+        const num = parseInt(codigo.substring(6), 10);
+        if (num <= 8) return "Números";
+        if (num <= 10) return "Álgebra";
+        if (num <= 14) return "Geometria";
+        if (num <= 19) return "Grandezas e Medidas";
+        return "Probabilidade e Estatística";
+      }
+
+      function obterEixoLibras(codigo) {
+        const num = parseInt(codigo.substring(6), 10);
+        if (num <= 20) return "Uso da Língua de Sinais";
+        if (num <= 35) return "Identidade e Cultura Surda";
+        if (num <= 50) return "Análise Linguística da Libras";
+        return "Arte e Literatura Surda";
+      }
+
       // Base Curricular Completa de Matemática (1º ao 9º Ano), Libras e Português L2
       const baseMatrizCurricular = {
         "Matematica": {
           "1º Ano": [
-            { codigo: "EF01MA01", descricao: "Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas e reconhecer situações em que os números não indicam contagem nem ordem, mas sim código de identificação." },
-            { codigo: "EF01MA02", descricao: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como o pareamento e outros agrupamentos." },
-            { codigo: "EF01MA03", descricao: "Estimar e comparar quantidades de objetos de dois conjuntos (em torno de 20 elementos), por estimativa e/ou por correspondência para indicar 'tem mais', 'tem menos' ou 'tem a mesma quantidade'." },
-            { codigo: "EF01MA04", descricao: "Contar a quantidade de objetos de coleções até 100 unidades e apresentar o resultado por registros verbais e simbólicos, em situações de seu interesse." },
-            { codigo: "EF01MA05", descricao: "Comparar números naturais de até duas ordens em situações cotidianas, com e sem suporte da reta numérica." },
-            { codigo: "EF01MA06", descricao: "Construir fatos básicos da adição e utilizá-los em procedimentos de cálculo para resolver problemas." },
-            { codigo: "EF01MA07", descricao: "Compor e decompor número de até duas ordens, por meio de diferentes adições, com suporte de material manipulável." },
-            { codigo: "EF01MA08", descricao: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até dois algarismos, com os significados de juntar, acrescentar, separar e retirar." },
-            { codigo: "EF01MA09", descricao: "Organizar e ordenar objetos familiares ou representações por figuras, por meio de atributos, tais como cor, forma e medida." },
-            { codigo: "EF01MA10", descricao: "Descrever, após o reconhecimento e a explicitação de um padrão, os elementos ausentes em sequências recursivas de números naturais, objetos ou figuras." },
-            { codigo: "EF01MA11", descricao: "Descrever a localização de pessoas e de objetos no espaço em relação à sua própria posição, utilizando termos como à direita, à esquerda, em frente, atrás." },
-            { codigo: "EF01MA12", descricao: "Descrever a localização de pessoas e de objetos no espaço segundo um dado ponto de referência, compreendendo a necessidade de explicitar o referencial." },
-            { codigo: "EF01MA13", descricao: "Relacionar figuras geométricas espaciais (cones, cilindros, esferas e blocos retangulares) a objetos familiares do mundo físico." },
-            { codigo: "EF01MA14", descricao: "Identificar e nomear figuras planas (círculo, quadrado, retângulo e triângulo) em desenhos apresentados em diferentes disposições ou em contornos de faces." },
-            { codigo: "EF01MA15", descricao: "Comparar comprimentos, capacidades ou massas, utilizando termos como mais alto, mais baixo, mais comprido, mais curto, mais grosso, mais fino." },
-            { codigo: "EF01MA16", descricao: "Relatar em linguagem verbal ou não verbal sequência de acontecimentos relativos a um dia, utilizando horários dos eventos." },
-            { codigo: "EF01MA17", descricao: "Reconhecer e relacionar períodos do dia, dias da semana e meses do ano, utilizando calendário, quando necessário." },
-            { codigo: "EF01MA18", descricao: "Produzir a escrita de uma data, apresentando o dia, o mês e o ano, e indicar o dia da semana de uma data, consultando calendários." },
-            { codigo: "EF01MA19", descricao: "Reconhecer e relacionar valores de moedas e cédulas do sistema monetário brasileiro para resolver situações simples do cotidiano." },
-            { codigo: "EF01MA20", descricao: "Classificar eventos envolvendo o acaso, tais como 'acontecerá com certeza', 'talvez aconteça' e 'é impossível acontecer'." },
-            { codigo: "EF01MA21", descricao: "Ler dados expressos em tabelas e em gráficos de colunas simples." },
-            { codigo: "EF01MA22", descricao: "Realizar pesquisa, envolvendo até duas variáveis categóricas de seu interesse e universo de até 30 elementos." }
+            { codigo: "EF01MA01", eixo: "Números", descricao: "Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas e reconhecer situações em que os números não indicam contagem nem ordem, mas sim código de identificação." },
+            { codigo: "EF01MA02", eixo: "Números", descricao: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como o pareamento e outros agrupamentos." },
+            { codigo: "EF01MA03", eixo: "Números", descricao: "Estimar e comparar quantidades de objetos de dois conjuntos (em torno de 20 elementos), por estimativa e/ou por correspondência para indicar 'tem mais', 'tem menos' ou 'tem a mesma quantidade'." },
+            { codigo: "EF01MA04", eixo: "Números", descricao: "Contar a quantidade de objetos de coleções até 100 unidades e apresentar o resultado por registros verbais e simbólicos, em situações de seu interesse." },
+            { codigo: "EF01MA05", eixo: "Números", descricao: "Comparar números naturais de até duas ordens em situações cotidianas, com e sem suporte da reta numérica." },
+            { codigo: "EF01MA06", eixo: "Números", descricao: "Construir fatos básicos da adição e utilizá-los em procedimentos de cálculo para resolver problemas." },
+            { codigo: "EF01MA07", eixo: "Números", descricao: "Compor e decompor número de até duas ordens, por meio de diferentes adições, com suporte de material manipulável." },
+            { codigo: "EF01MA08", eixo: "Números", descricao: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até dois algarismos, com os significados de juntar, acrescentar, separar e retirar." },
+            { codigo: "EF01MA09", eixo: "Álgebra", descricao: "Organizar e ordenar objetos familiares ou representações por figuras, por meio de atributos, tais como cor, forma e medida." },
+            { codigo: "EF01MA10", eixo: "Álgebra", descricao: "Descrever, após o reconhecimento e a explicitação de um padrão, os elementos ausentes em sequências recursivas de números naturais, objetos ou figuras." },
+            { codigo: "EF01MA11", eixo: "Geometria", descricao: "Descrever a localização de pessoas e de objetos no espaço em relação à sua própria posição, utilizando termos como à direita, à esquerda, em frente, atrás." },
+            { codigo: "EF01MA12", eixo: "Geometria", descricao: "Descrever a localização de pessoas e de objetos no espaço segundo um dado ponto de referência, compreendendo a necessidade de explicitar o referencial." },
+            { codigo: "EF01MA13", eixo: "Geometria", descricao: "Relacionar figuras geométricas espaciais (cones, cilindros, esferas e blocos retangulares) a objetos familiares do mundo físico." },
+            { codigo: "EF01MA14", eixo: "Geometria", descricao: "Identificar e nomear figuras planas (círculo, quadrado, retângulo e triângulo) em desenhos apresentados em diferentes disposições ou em contornos de faces." },
+            { codigo: "EF01MA15", eixo: "Grandezas e Medidas", descricao: "Comparar comprimentos, capacidades ou massas, utilizando termos como mais alto, mais baixo, mais comprido, mais curto, mais grosso, mais fino." },
+            { codigo: "EF01MA16", eixo: "Grandezas e Medidas", descricao: "Relatar em linguagem verbal ou não verbal sequência de acontecimentos relativos a um dia, utilizando horários dos eventos." },
+            { codigo: "EF01MA17", eixo: "Grandezas e Medidas", descricao: "Reconhecer e relacionar períodos do dia, dias da semana e meses do ano, utilizando calendário, quando necessário." },
+            { codigo: "EF01MA18", eixo: "Grandezas e Medidas", descricao: "Produzir a escrita de uma data, apresentando o dia, o mês e o ano, e indicar o dia da semana de uma data, consultando calendários." },
+            { codigo: "EF01MA19", eixo: "Grandezas e Medidas", descricao: "Reconhecer e relacionar valores de moedas e cédulas do sistema monetário brasileiro para resolver situações simples do cotidiano." },
+            { codigo: "EF01MA20", eixo: "Probabilidade e Estatística", descricao: "Classificar eventos envolvendo o acaso, tais como 'acontecerá com certeza', 'talvez aconteça' e 'é impossível acontecer'." },
+            { codigo: "EF01MA21", eixo: "Probabilidade e Estatística", descricao: "Ler dados expressos em tabelas e em gráficos de colunas simples." },
+            { codigo: "EF01MA22", eixo: "Probabilidade e Estatística", descricao: "Realizar pesquisa, envolvendo até duas variáveis categóricas de seu interesse e universo de até 30 elementos." }
           ],
           "2º Ano": [
             { codigo: "EF02MA01", descricao: "Comparar e ordenar números naturais (até a ordem de centenas) pela compreensão de características do sistema de numeração decimal." },
@@ -510,7 +532,7 @@
             { codigo: "EF06MA27", descricao: "Determinar medidas da abertura de ângulos por meio de transferidor." },
             { codigo: "EF06MA28", descricao: "Interpretar, descrever e desenhar plantas baixas simples de residências." },
             { codigo: "EF06MA29", descricao: "Analisar mudanças que ocorrem no perímetro e na área de um quadrado ao ampliar seus lados." },
-            { codigo: "EF06MA30", descricao: "Calcular probabilidade de evento aleatório expressando-a por fração, decimal e percentual." },
+            { codigo: "EF06MA30", descricao: "Calcalcular probabilidade de evento aleatório expressando-a por fração, decimal e percentual." },
             { codigo: "EF06MA31", descricao: "Identificar variáveis, frequências e elementos constitutivos de gráficos." },
             { codigo: "EF06MA32", descricao: "Interpretar e resolver situações com dados de pesquisas da mídia sobre contextos socioambientais." },
             { codigo: "EF06MA33", descricao: "Planejar e coletar dados de pesquisa e fazer uso de planilhas eletrônicas." },
@@ -611,41 +633,573 @@
           ]
         },
         "Libras": {
-          "Educação Infantil": [
-            { codigo: "EI01LS01", descricao: "Interagir em Libras em situações cotidianas, demonstrando interesse na comunicação visual." },
-            { codigo: "EI03LS05", descricao: "Reconhecer sinais básicos de Libras referentes a familiares, sentimentos e objetos diários." }
+          "1º Ano": [
+            { codigo: "EF01LS01", descricao: "Consolidar aspectos pragmáticos do contato comunicativo - direcionamento da atenção e contato de olho (toque no ombro como forma de chamamento, antecipação do sinal antes de apresentar o objeto, piscar a luz) na interação com o professor e com os outros estudantes." },
+            { codigo: "EF01LS02", descricao: "Explorar as habilidades de percepção e discriminação visual por meio de imagem (detalhes em objetos, fotos, desenhos, identificação de diferenças entre figuras, jogos dos sete erros)." },
+            { codigo: "EF01LS03", descricao: "Explorar as habilidades de percepção e discriminação visual na identificação de traços da Libras com atividades de jogo da memória em Língua de Sinais e telefone sem fio adaptado." },
+            { codigo: "EF01LS04", descricao: "Vivenciar o reconhecimento dos movimentos corporais por meio de brincadeiras regionais e da cultura surda, músicas interpretadas, danças." },
+            { codigo: "EF01LS05", descricao: "Relatar fatos simples do cotidiano pessoal ou do grupo, com o apoio do professor." },
+            { codigo: "EF01LS06", descricao: "Observar contação de histórias feitas pelo professor ou pelo instrutor de Libras, em interação natural ou em registros de vídeo." },
+            { codigo: "EF01LS07", descricao: "Observar a produção do discurso de procedimento em atividades desenvolvidas pelo professor e apresentadas em Libras." },
+            { codigo: "EF01LS08", descricao: "Observar a produção do discurso descritivo em atividades desenvolvidas pelo professor e apresentadas em Libras." },
+            { codigo: "EF01LS09", descricao: "Explorar, de forma adequada, as habilidades pragmáticas de manutenção de tópico e tomada de turno comunicativo em momentos de interação com o professor e colegas." },
+            { codigo: "EF01LS10", descricao: "Explorar a marcação de tempo explícita em relatos de vivências (final de semana, festa)." },
+            { codigo: "EF01LS11", descricao: "Observar o uso do sistema de pronominalização da Libras nos momentos de recontos de histórias ou de relatos de vivências." },
+            { codigo: "EF01LS12", descricao: "Explorar o uso das expressões faciais e corporais da Libras em reconto de histórias." },
+            { codigo: "EF01LS13", descricao: "Produzir vídeos se apresentando e apresentando seus colegas." },
+            { codigo: "EF01LS14", descricao: "Explorar a ampliação de repertório a partir de notícias do cotidiano." },
+            { codigo: "EF01LS15", descricao: "Realizar a apresentação pessoal com nome próprio, sinal e idade com o auxílio do professor." },
+            { codigo: "EF01LS16", descricao: "Participar de momentos de diálogos para o compartilhamento de vivências, repertório cultural e emoções." },
+            { codigo: "EF01LS17", descricao: "Usar a Libras na interação social e lúdica na sala de aula, de forma autônoma." },
+            { codigo: "EF01LS18", descricao: "Explorar a consciência de si e do outro nas interações sociais entre surdos e ouvintes." },
+            { codigo: "EF01LS19", descricao: "Conhecer as saudações e cumprimentos na Libras e fazer uso nas relações com interlocutores." },
+            { codigo: "EF01LS20", descricao: "Explorar as funções da linguagem para iniciar, manter e concluir uma conversa (função fática) e transmitir informação (função referencial)." },
+            { codigo: "EF01LS21", descricao: "Identificar-se como surdo e aos outros como surdos ou ouvintes." },
+            { codigo: "EF01LS22", descricao: "Experimentar as melhores formas de organização dos espaços (campainha luminosa, portas com janela de vidro, datashow, cadeiras em U) no ambiente escolar." },
+            { codigo: "EF01LS23", descricao: "Explorar e conhecer brincadeiras infantis da comunidade surda e da comunidade ouvinte." },
+            { codigo: "EF01LS24", descricao: "Explorar a consciência e a construção de um modelo de identidade surda a partir da interação com pessoas surdas." },
+            { codigo: "EF01LS25", descricao: "Compartilhar regras culturais para estabelecimento do diálogo, como chamamento de atenção por entrada no campo visual ou toque no ombro." },
+            { codigo: "EF01LS26", descricao: "Vivenciar, com modelos surdos (instrutores, vídeos), experiências que possibilitem perceber, adquirir e utilizar aspectos da cultura surda." },
+            { codigo: "EF01LS27", descricao: "Explorar o significado dos símbolos da surdez, dos grupos sociais, dos eventos e festas da comunidade surda." },
+            { codigo: "EF01LS28", descricao: "Conhecer a importância do sinal pessoal de identificação para as pessoas surdas e ouvintes." },
+            { codigo: "EF01LS29", descricao: "Iniciar a representação dos conhecimentos da Escrita da Língua de Sinais por meio de desenhos, ilustrações e representações visuais." },
+            { codigo: "EF01LS30", descricao: "Apresentar elementos básicos da Escrita de Língua de Sinais." },
+            { codigo: "EF01LS31", descricao: "Compreender a importância da participação em associações de surdos e eventos da comunidade." },
+            { codigo: "EF01LS32", descricao: "Interagir com pessoas surdas e ouvintes observando suas diferenças." },
+            { codigo: "EF01LS33", descricao: "Perceber as formas de comportamento linguístico observadas na comunidade surda e ouvinte." },
+            { codigo: "EF01LS34", descricao: "Conhecer a história de vida de personalidades da comunidade surda." },
+            { codigo: "EF01LS35", descricao: "Conhecer a história da sua escola e seu respectivo sinal." },
+            { codigo: "EF01LS36", descricao: "Explorar os aspectos gerais da produção espontânea quanto aos parâmetros da língua (configuração de mãos, locação, movimento, expressões não manuais, orientação)." },
+            { codigo: "EF01LS37", descricao: "Explorar a configuração de mãos em jogos e brincadeiras." },
+            { codigo: "EF01LS38", descricao: "Explorar as expressões não manuais de jogos e brincadeiras." },
+            { codigo: "EF01LS39", descricao: "Contextualizar os sinais conforme as práticas linguísticas relacionadas a temas do cotidiano." },
+            { codigo: "EF01LS40", descricao: "Realizar classificação semântica a partir de relações de conteúdo entre itens lexicais (alimentos/salada/alface)." },
+            { codigo: "EF01LS41", descricao: "Perceber os sinais conforme as práticas linguísticas relacionadas a temas do cotidiano." },
+            { codigo: "EF01LS42", descricao: "Explorar, em interações espontâneas, a estrutura da frase como modelo a ser incorporado no discurso." },
+            { codigo: "EF01LS43", descricao: "Produzir frases com múltiplas combinações." },
+            { codigo: "EF01LS44", descricao: "Explorar o conhecimento dos substantivos, verbos, adjetivos, pronomes na Libras e suas funções na frase." },
+            { codigo: "EF01LS45", descricao: "Explorar itens da sintaxe espacial da Libras." },
+            { codigo: "EF01LS46", descricao: "Organizar e compreender histórias em sequência lógico-temporal." },
+            { codigo: "EF01LS47", descricao: "Produzir narrativa sobre um tema proposto, mantendo o foco na temática, com a ajuda do professor." },
+            { codigo: "EF01LS48", descricao: "Explorar a estrutura de uma narrativa, observando a coerência entre os eventos." },
+            { codigo: "EF01LS49", descricao: "Perceber a possibilidade de um narrador estar em primeira ou terceira pessoa." },
+            { codigo: "EF01LS50", descricao: "Conhecer as expressões artísticas da comunidade surda." },
+            { codigo: "EF01LS51", descricao: "Explorar materiais produzidos por surdos no campo artístico." },
+            { codigo: "EF01LS52", descricao: "Conhecer contos, poesias surdas e performances elaboradas pela comunidade surda." },
+            { codigo: "EF01LS53", descricao: "Identificar em contos populares sinalizados pelo professor características dos personagens." },
+            { codigo: "EF01LS54", descricao: "Participar de leitura compartilhada de produções narrativas." },
+            { codigo: "EF01LS55", descricao: "Conhecer histórias infantis tradicionais da comunidade surda e ouvinte." },
+            { codigo: "EF01LS56", descricao: "Observar a produção literária, discriminando a análise das características que diferem da sinalização espontânea." },
+            { codigo: "EF01LS57", descricao: "Antecipar eventos de uma narrativa pela percepção de imagens e características de personagens." },
+            { codigo: "EF01LS58", descricao: "Estimular a produção espontânea de histórias conhecidas e criadas pelos estudantes." },
+            { codigo: "EF01LS59", descricao: "Reproduzir manifestações artísticas elaboradas pela comunidade surda, de acordo com o momento de desenvolvimento." },
+            { codigo: "EF01LS60", descricao: "Recontar histórias, com a ajuda do professor, tendo cuidado estético na produção da sinalização." },
+            { codigo: "EF01LS61", descricao: "Participar de dramatização de histórias com a produção de sinalização espontânea, guiada apenas por um tema." }
           ],
-          "Ensino Fundamental (1º ao 5º)": [
-            { codigo: "EF01LS01", descricao: "Utilizar o alfabeto manual e sinais básicos de Libras para identificação pessoal." },
-            { codigo: "EF03LS12", descricao: "Ampliar o vocabulário em Libras relacionado a animais, cores, números e ambiente escolar." }
+          "2º Ano": [
+            { codigo: "EF02LS01", descricao: "Utilizar as habilidades de percepção e discriminação visual na identificação de traços da Libras com jogos de configurações de mãos e memória." },
+            { codigo: "EF02LS02", descricao: "Explorar a manutenção da atenção comunicativa aos interlocutores e discursos observando histórias em vídeos e contadas." },
+            { codigo: "EF02LS03", descricao: "Explorar o uso da prosódia na Libras com apresentação de histórias infantis enfatizando aspectos não manuais e emoções." },
+            { codigo: "EF02LS04", descricao: "Explorar as habilidades de percepção e discriminação visual em imagem (detalhes em objetos, fotos, desenhos, 7 erros)." },
+            { codigo: "EF02LS05", descricao: "Vivenciar o reconhecimento dos movimentos corporais em brincadeiras regionais e da cultura surda, danças e músicas." },
+            { codigo: "EF02LS06", descricao: "Explorar os recursos da contação de histórias feitas pelo professor ou instrutor de Libras." },
+            { codigo: "EF02LS07", descricao: "Conhecer o discurso de procedimento nos relatos de rotina ou execução de atividades." },
+            { codigo: "EF02LS08", descricao: "Observar a produção do discurso descritivo feita pelo professor ou instrutor de Libras." },
+            { codigo: "EF02LS09", descricao: "Explorar os mecanismos de flexão de gênero e número em atividades de contação de histórias." },
+            { codigo: "EF02LS10", descricao: "Explorar o uso do sistema de pronominalização da Libras nos recontos de histórias ou relatos de vivências." },
+            { codigo: "EF02LS11", descricao: "Utilizar a marcação de tempo explícita em relatos de vivências." },
+            { codigo: "EF02LS12", descricao: "Utilizar expressões faciais e corporais da Libras em reconto de histórias." },
+            { codigo: "EF02LS13", descricao: "Participar de diálogos em roda de conversa sobre rotina escolar e calendário em Libras." },
+            { codigo: "EF02LS14", descricao: "Explorar o repertório de vocabulário (sinais) com relatos de experiências em rodas de conversas." },
+            { codigo: "EF02LS15", descricao: "Reconhecer e utilizar as regras de convivência na interação com o professor, colegas e demais pessoas." },
+            { codigo: "EF02LS16", descricao: "Participar de negociações sobre decisões a serem tomadas pelo grupo, expressando dúvidas e opiniões." },
+            { codigo: "EF02LS17", descricao: "Participar de momentos de diálogos para compartilhamento de vivências, repertório cultural e emoções." },
+            { codigo: "EF02LS18", descricao: "Utilizar as funções da linguagem para iniciar, manter e concluir conversas e transmitir informações diretas." },
+            { codigo: "EF02LS19", descricao: "Utilizar as habilidades pragmáticas de manutenção de tópico e tomada de turno comunicativo." },
+            { codigo: "EF02LS20", descricao: "Participar de atividades de representação e dramatização de histórias infantis conhecidas usando Libras." },
+            { codigo: "EF02LS21", descricao: "Identificar características da cultura surda, distinguindo manifestações culturais das comunidades surdas." },
+            { codigo: "EF02LS22", descricao: "Explorar e conhecer brincadeiras infantis da comunidade surda e da comunidade ouvinte." },
+            { codigo: "EF02LS23", descricao: "Compartilhar regras culturais para estabelecimento do diálogo (entrada em campo visual ou toque no ombro)." },
+            { codigo: "EF02LS24", descricao: "Vivenciar, com modelos surdos, experiências que possibilitem perceber, adquirir e utilizar aspectos da cultura surda." },
+            { codigo: "EF02LS25", descricao: "Explorar a autonomia linguística a partir da interação com diferentes pares, surdos e ouvintes." },
+            { codigo: "EF02LS26", descricao: "Explorar o significado dos símbolos da surdez, dos grupos sociais, eventos e festas da comunidade surda." },
+            { codigo: "EF02LS27", descricao: "Experimentar as melhores formas de organização dos espaços no ambiente escolar." },
+            { codigo: "EF02LS28", descricao: "Conhecer a importância do sinal pessoal de identificação para surdos e ouvintes." },
+            { codigo: "EF02LS29", descricao: "Proporcionar momentos para iniciar a representação da Libras por meio de escrita de sinais em jogos e brincadeiras." },
+            { codigo: "EF02LS30", descricao: "Apontar as semelhanças da Escrita da Língua de Sinais apresentando suas particularidades." },
+            { codigo: "EF02LS31", descricao: "Explorar a diversidade cultural no Brasil e as regionalidades com relação ao uso da Libras." },
+            { codigo: "EF02LS32", descricao: "Interagir com pessoas surdas e ouvintes observando suas diferenças." },
+            { codigo: "EF02LS33", descricao: "Compreender a importância da participação em associações de surdos e eventos realizados pela comunidade." },
+            { codigo: "EF02LS34", descricao: "Diferenciar as formas de comportamento linguístico observadas na comunidade surda e sociedade ouvinte." },
+            { codigo: "EF02LS35", descricao: "Pesquisar a história de vida de personalidades da comunidade surda." },
+            { codigo: "EF02LS36", descricao: "Conhecer os registros históricos sobre as comunidades surdas." },
+            { codigo: "EF02LS37", descricao: "Conhecer sobre outras escolas de surdos no Município de São Paulo, suas histórias e sinais." },
+            { codigo: "EF02LS38", descricao: "Aprofundar a exploração dos aspectos gerais da produção espontânea quanto aos parâmetros da língua." },
+            { codigo: "EF02LS39", descricao: "Reconhecer a configuração de mãos na construção do sinal." },
+            { codigo: "EF02LS40", descricao: "Reconhecer as expressões não manuais na construção do sinal." },
+            { codigo: "EF02LS41", descricao: "Explorar a locação e o movimento na construção do sinal." },
+            { codigo: "EF02LS42", descricao: "Explorar os sinais ampliando o repertório e alinhando os significados e conceitos." },
+            { codigo: "EF02LS43", descricao: "Aprofundar a habilidade de classificação semântica a partir de relações de conteúdo entre itens lexicais." },
+            { codigo: "EF02LS44", descricao: "Explicar os significados dos sinais, motivando a compreensão e contextualização dos conceitos." },
+            { codigo: "EF02LS45", descricao: "Explorar, em interações espontâneas, a estrutura da frase como modelo a ser incorporado no discurso." },
+            { codigo: "EF02LS46", descricao: "Participar de situações com o objetivo de produzir frases com múltiplas combinações." },
+            { codigo: "EF02LS47", descricao: "Utilizar discursos estruturados a partir de frases com múltiplas combinações." },
+            { codigo: "EF02LS48", descricao: "Explorar as noções de substantivo, verbo, adjetivo, pronome na Libras e suas funções na frase." },
+            { codigo: "EF02LS49", descricao: "Explorar itens da sintaxe espacial da Libras." },
+            { codigo: "EF02LS50", descricao: "Reconhecer e identificar os marcadores de tempo no discurso." },
+            { codigo: "EF02LS51", descricao: "Produzir narrativa sobre um tema proposto, mantendo o foco na temática, com a ajuda do professor." },
+            { codigo: "EF02LS52", descricao: "Explorar aspectos da organização do discurso em atividade de continuação de uma história." },
+            { codigo: "EF02LS53", descricao: "Organizar e recontar histórias em sequência lógico-temporal." },
+            { codigo: "EF02LS54", descricao: "Empregar, em atividade de reconto de história, o mesmo tipo de narrador (1ª ou 3ª pessoa)." },
+            { codigo: "EF02LS55", descricao: "Articular as partes de uma narrativa baseada em uma sequência de figuras." },
+            { codigo: "EF02LS56", descricao: "Conhecer diferentes expressões artísticas produzidas por surdos e ouvintes." },
+            { codigo: "EF02LS57", descricao: "Conhecer contos, poesias surdas e performances elaboradas pela comunidade surda." },
+            { codigo: "EF02LS58", descricao: "Conhecer os contos tradicionais adaptados à cultura surda." },
+            { codigo: "EF02LS59", descricao: "Explorar poemas em Libras observando o uso das configurações de mãos." },
+            { codigo: "EF02LS60", descricao: "Participar de leitura compartilhada de produções narrativas." },
+            { codigo: "EF02LS61", descricao: "Identificar em contos sinalizados pelo professor, características dos personagens." },
+            { codigo: "EF02LS62", descricao: "Observar a produção literária, discriminando a análise das características que diferem da sinalização espontânea." },
+            { codigo: "EF02LS63", descricao: "Reconhecer histórias contadas pelo professor por meio de recursos multimodais." },
+            { codigo: "EF02LS64", descricao: "Reconhecer elementos de uma narrativa (personagens, enredo, tempo e espaço)." },
+            { codigo: "EF02LS65", descricao: "Elaborar narrativas de forma compartilhada." },
+            { codigo: "EF02LS66", descricao: "Recontar histórias, com a ajuda do professor, tendo cuidado estético na produção da sinalização." },
+            { codigo: "EF02LS67", descricao: "Participar da dramatização de histórias com a produção de textos em Libras não espontâneos." },
+            { codigo: "EF02LS68", descricao: "Explorar as possibilidades de uso poético da Libras." }
           ],
-          "Ensino Fundamental (6º ao 9º)": [
-            { codigo: "EF07LS25", descricao: "Produzir enunciados complexos em Libras respeitando a estrutura gramatical visual-espacial." },
-            { codigo: "EF09LS40", descricao: "Debater temas socioculturais e acadêmicos utilizando terminologias avançadas em Libras." }
+          "3º Ano": [
+            { codigo: "EF03LS01", descricao: "Consolidar as habilidades de percepção e discriminação visual na identificação de traços da Libras com jogos de configuração de mãos e exposição natural." },
+            { codigo: "EF03LS02", descricao: "Explorar o uso da prosódia na Libras em histórias infantis, enfatizando aspectos não manuais e prosódia emocional." },
+            { codigo: "EF03LS03", descricao: "Aprofundar as habilidades de percepção e discriminação visual de imagem." },
+            { codigo: "EF03LS04", descricao: "Explorar as habilidades de percepção e discriminação visual na identificação de traços da Libras com jogos da memória e telefone sem fio adaptado." },
+            { codigo: "EF03LS05", descricao: "Utilizar a marcação de tempo explícita em relatos de vivências." },
+            { codigo: "EF03LS06", descricao: "Explorar a capacidade de defender uma ideia e justificar sua posição." },
+            { codigo: "EF03LS07", descricao: "Recontar histórias infantis conhecidas com apoio do professor." },
+            { codigo: "EF03LS08", descricao: "Utilizar o discurso descritivo em atividades propostas pelo professor e apresentadas em Libras." },
+            { codigo: "EF03LS09", descricao: "Utilizar o discurso de procedimento nos relatos de rotina ou na execução de atividades guiadas." },
+            { codigo: "EF03LS10", descricao: "Utilizar os mecanismos de flexão de gênero e número em atividades de contação de história." },
+            { codigo: "EF03LS11", descricao: "Explorar contos tradicionais e contos de humor na Libras." },
+            { codigo: "EF03LS12", descricao: "Explorar o uso do sistema de pronominalização da Libras nos momentos de recontos de histórias ou relatos de vivências." },
+            { codigo: "EF03LS13", descricao: "Propor desafios e jogos de raciocínio lógico para ampliar o estabelecimento de regras." },
+            { codigo: "EF03LS14", descricao: "Participar de atividades de representação e dramatização de histórias infantis conhecidas, usando Libras e regras de interação." },
+            { codigo: "EF03LS15", descricao: "Participar de momentos de diálogos para o compartilhamento de vivências, repertório cultural e emoções." },
+            { codigo: "EF03LS16", descricao: "Expressar pensamentos e opiniões defendendo as suas escolhas." },
+            { codigo: "EF03LS17", descricao: "Consolidar o uso das funções da linguagem para iniciar, manter e concluir conversas e transmitir informações diretas." },
+            { codigo: "EF03LS18", descricao: "Consolidar o uso das habilidades pragmáticas de manutenção de tópico e tomada de turno comunicativo." },
+            { codigo: "EF03LS19", descricao: "Reconhecer os ambientes linguísticos e as línguas envolvidas, identificando a função do intérprete e do professor." },
+            { codigo: "EF03LS20", descricao: "Compartilhar regras culturais para estabelecimento do diálogo." },
+            { codigo: "EF03LS21", descricao: "Vivenciar, com modelos surdos, experiências que possibilitem perceber, adquirir e utilizar aspectos da cultura surda." },
+            { codigo: "EF03LS22", descricao: "Explorar recursos tecnológicos de acessibilidade comunicativa." },
+            { codigo: "EF03LS23", descricao: "Explorar o significado dos símbolos da surdez, dos grupos sociais, eventos e festas da comunidade surda." },
+            { codigo: "EF03LS24", descricao: "Iniciar a representação da Libras por meio da Escrita de Sinais simples." },
+            { codigo: "EF03LS25", descricao: "Realizar leituras de sinais e frases curtas em Escrita da Língua de Sinais." },
+            { codigo: "EF03LS26", descricao: "Explorar a diversidade cultural no Brasil e as regionalidades com relação ao uso da Libras." },
+            { codigo: "EF03LS27", descricao: "Interagir com pessoas surdas e ouvintes observando suas diferenças." },
+            { codigo: "EF03LS28", descricao: "Compreender a importância da participação em associações de surdos e eventos realizados pela comunidade." },
+            { codigo: "EF03LS29", descricao: "Pesquisar sobre as línguas de sinais utilizadas em outros países." },
+            { codigo: "EF03LS30", descricao: "Diferenciar as formas de comportamento linguístico observadas na comunidade surda e sociedade ouvinte." },
+            { codigo: "EF03LS31", descricao: "Conhecer os registros históricos sobre as comunidades surdas." },
+            { codigo: "EF03LS32", descricao: "Relatar suas vivências por meio de desenhos, fotos e filmagens, compartilhando com os colegas." },
+            { codigo: "EF03LS33", descricao: "Conhecer sobre outras escolas de surdos no Brasil, suas histórias e seus respectivos sinais." },
+            { codigo: "EF03LS34", descricao: "Distinguir os parâmetros da Libras na produção linguística." },
+            { codigo: "EF03LS35", descricao: "Utilizar a configuração de mãos na construção do sinal." },
+            { codigo: "EF03LS36", descricao: "Utilizar as expressões não manuais na construção do sinal." },
+            { codigo: "EF03LS37", descricao: "Reconhecer a locação e o movimento na construção do sinal." },
+            { codigo: "EF03LS38", descricao: "Explorar a orientação da mão e o número de mãos na construção do sinal." },
+            { codigo: "EF03LS39", descricao: "Explorar os sinais ampliando o repertório e alinhando os significados e conceitos." },
+            { codigo: "EF03LS40", descricao: "Utilizar de forma autônoma o vocabulário apropriado ao discurso do cotidiano." },
+            { codigo: "EF03LS41", descricao: "Empregar vocabulário apropriado ao discurso relacionado ao tema de estudo." },
+            { codigo: "EF03LS42", descricao: "Identificar em vídeos os sintagmas da frase." },
+            { codigo: "EF03LS43", descricao: "Explorar a consciência do sistema pronominal espacial da Libras." },
+            { codigo: "EF03LS44", descricao: "Perceber e distinguir itens da sintaxe espacial da Libras." },
+            { codigo: "EF03LS45", descricao: "Reconhecer e utilizar o conhecimento dos substantivos, verbos, adjetivos, pronomes." },
+            { codigo: "EF03LS46", descricao: "Segmentar um texto em Libras em partes de sentido, como eventos ou cenas em uma narrativa." },
+            { codigo: "EF03LS47", descricao: "Planejar e usar no reconto de história o repertório de marcadores de tempo no discurso." },
+            { codigo: "EF03LS48", descricao: "Produzir narrativa sobre um tema proposto, mantendo o foco na temática, com apoio." },
+            { codigo: "EF03LS49", descricao: "Organizar e recontar histórias em sequência lógico-temporal." },
+            { codigo: "EF03LS50", descricao: "Explorar aspectos da organização do discurso em atividade de continuação de uma história." },
+            { codigo: "EF03LS51", descricao: "Articular as partes de uma narrativa baseada em uma sequência de figuras." },
+            { codigo: "EF03LS52", descricao: "Conhecer contos, poesias surdas e performances elaboradas pela comunidade surda." },
+            { codigo: "EF03LS53", descricao: "Conhecer os contos tradicionais adaptados à cultura surda." },
+            { codigo: "EF03LS54", descricao: "Explorar poemas em Libras observando o uso dos classificadores." },
+            { codigo: "EF03LS55", descricao: "Observar a produção literária, discriminando as características que diferem da sinalização espontânea." },
+            { codigo: "EF03LS56", descricao: "Reconhecer histórias contadas por meio de recursos multimodais e relatos do professor." },
+            { codigo: "EF03LS57", descricao: "Reconhecer os elementos de uma narrativa (personagem, enredo, tempo e espaço)." },
+            { codigo: "EF03LS58", descricao: "Reconhecer e recontar histórias infantis tradicionais de diferentes povos e culturas." },
+            { codigo: "EF03LS59", descricao: "Conhecer histórias multiculturais ao redor do mundo a partir de textos apresentados em Libras." },
+            { codigo: "EF03LS60", descricao: "Elaborar narrativas de forma compartilhada." },
+            { codigo: "EF03LS61", descricao: "Recontar histórias, com ajuda do professor, tendo cuidado estético na produção da sinalização." },
+            { codigo: "EF03LS62", descricao: "Participar da dramatização de histórias com a produção de textos em Libras não espontâneos." },
+            { codigo: "EF03LS63", descricao: "Participar de sarau com diversas manifestações artísticas baseadas na Libras." }
+          ],
+          "4º Ano": [
+            { codigo: "EF04LS01", descricao: "Explorar temas de interesse escolhidos pelo grupo sobre a atualidade com uso de recursos visuais diversos." },
+            { codigo: "EF04LS02", descricao: "Produzir vídeos apresentando opiniões e formulando perguntas sobre temas propostos pelos estudantes." },
+            { codigo: "EF04LS03", descricao: "Reconstruir narrativas baseadas em produções observadas em vídeos de surdos adultos sinalizando." },
+            { codigo: "EF04LS04", descricao: "Explorar a utilização do espaço de sinalização em narrativas, fazendo uso da sintaxe da língua e expressões corporais." },
+            { codigo: "EF04LS05", descricao: "Explorar contos tradicionais e contos de humor na Libras." },
+            { codigo: "EF04LS06", descricao: "Produzir narrativa baseada em história em sequência lógico temporal." },
+            { codigo: "EF04LS07", descricao: "Explorar o uso do sistema de pronominalização da Libras nos recontos de histórias ou relatos de vivências." },
+            { codigo: "EF04LS08", descricao: "Observar diálogos em vídeos e discutir sobre as características da interação em Libras." },
+            { codigo: "EF04LS09", descricao: "Explorar a capacidade de defender uma ideia e justificar sua posição." },
+            { codigo: "EF04LS10", descricao: "Utilizar o discurso descritivo para apresentar espaços e acontecimentos." },
+            { codigo: "EF04LS11", descricao: "Realizar reconto de histórias de forma autônoma." },
+            { codigo: "EF04LS12", descricao: "Explorar a organização discursiva na expressão de causalidade e condição entre ideias apresentadas." },
+            { codigo: "EF04LS13", descricao: "Explorar a percepção das reações do interlocutor no momento da interação e modificar a produção." },
+            { codigo: "EF04LS14", descricao: "Produzir o discurso de procedimento de forma autônoma." },
+            { codigo: "EF04LS15", descricao: "Observar produções sinalizadas de autobiografia." },
+            { codigo: "EF04LS16", descricao: "Acompanhar uma narrativa com atenção." },
+            { codigo: "EF04LS17", descricao: "Participar de atividades que possibilitam a troca de experiências relacionadas a planos para o futuro." },
+            { codigo: "EF04LS18", descricao: "Identificar e utilizar o turno comunicativo, respeitando o momento de fala do outro." },
+            { codigo: "EF04LS19", descricao: "Apreciar a opinião pessoal de diferentes interlocutores em uma discussão." },
+            { codigo: "EF04LS20", descricao: "Compreender a troca de interlocutores nas atividades discursivas e mobilizar recursos para modificar a forma de expressar." },
+            { codigo: "EF04LS21", descricao: "Analisar vídeos com produção de surdos com diferentes variações na sinalização." },
+            { codigo: "EF04LS22", descricao: "Utilizar sinais pesquisados em sinalários observando a adequação de uso às situações." },
+            { codigo: "EF04LS23", descricao: "Reconhecer e descrever comportamentos linguísticos em ambientes formais e informais." },
+            { codigo: "EF04LS24", descricao: "Utilizar a incorporação de personagem de forma adequada ao registro linguístico e situação." },
+            { codigo: "EF04LS25", descricao: "Realizar visita a museus, teatros, exposições diversas e eventos culturais com acessibilidade." },
+            { codigo: "EF04LS26", descricao: "Analisar temas da atualidade emitindo opinião e aprofundando discussões." },
+            { codigo: "EF04LS27", descricao: "Participar de atividades que envolvam a interação linguística com pessoas surdas fora da escola." },
+            { codigo: "EF04LS28", descricao: "Conhecer a história da comunidade surda no Brasil em relatos em vídeos ou sinalizados." },
+            { codigo: "EF04LS29", descricao: "Conhecer as especificidades das pessoas surdas e designações usadas ao longo da história." },
+            { codigo: "EF04LS30", descricao: "Discutir sobre os movimentos surdos da história e da atualidade." },
+            { codigo: "EF04LS31", descricao: "Conhecer os eventos comemorativos relacionados à cultura brasileira na escola e elaborar materiais em Libras." },
+            { codigo: "EF04LS32", descricao: "Produzir suportes de aprendizagens (portfólios) na Escrita da Língua de Sinais." },
+            { codigo: "EF04LS33", descricao: "Realizar a leitura de frases curtas na Escrita da Língua de Sinais." },
+            { codigo: "EF04LS34", descricao: "Reescrever, na Escrita da Língua de Sinais, palavras e frases apresentadas pelo professor." },
+            { codigo: "EF04LS35", descricao: "Participar de atividades de circulação da Libras por meio de cartazes com sinalização dos espaços." },
+            { codigo: "EF04LS36", descricao: "Conhecer os símbolos que indicam acessibilidade, seus significados e seus usos." },
+            { codigo: "EF04LS37", descricao: "Discutir a importância do papel do tradutor intérprete de Libras diferenciando sua atuação." },
+            { codigo: "EF04LS38", descricao: "Investigar os pares mínimos na Libras a partir dos parâmetros fonético-fonológicos da língua." },
+            { codigo: "EF04LS39", descricao: "Compreender o caráter distintivo das expressões não manuais a partir de pares mínimos." },
+            { codigo: "EF04LS40", descricao: "Analisar a simultaneidade e o uso do espaço na elaboração do discurso." },
+            { codigo: "EF04LS41", descricao: "Analisar as configurações de mão e expressões não manuais em sinais isolados." },
+            { codigo: "EF04LS42", descricao: "Distinguir os sinais simples dos sinais compostos." },
+            { codigo: "EF04LS43", descricao: "Explorar os advérbios de lugar, de tempo e de intensidade." },
+            { codigo: "EF04LS44", descricao: "Utilizar o processo anafórico, simultaneidade, classificadores e uso do espaço." },
+            { codigo: "EF04LS45", descricao: "Explorar e reconhecer a flexão de gênero e grau." },
+            { codigo: "EF04LS46", descricao: "Analisar as formas de incorporação de numeral." },
+            { codigo: "EF04LS47", descricao: "Explorar, com auxílio do professor, o conhecimento metalinguístico de verbos, substantivos e adjetivos." },
+            { codigo: "EF04LS48", descricao: "Identificar, em registros em Escrita de Sinais, frases curtas." },
+            { codigo: "EF04LS49", descricao: "Explorar o conhecimento metalinguístico das marcações de número." },
+            { codigo: "EF04LS50", descricao: "Identificar os recursos usados no sistema pronominal espacial da Libras." },
+            { codigo: "EF04LS51", descricao: "Identificar sinais sinônimos e antônimos, explorando os significados e sentidos." },
+            { codigo: "EF04LS52", descricao: "Explorar as categorias semânticas dos sinais." },
+            { codigo: "EF04LS53", descricao: "Explorar a iconicidade de sinais da Libras, observando suas propriedades e sentidos." },
+            { codigo: "EF04LS54", descricao: "Conhecer artistas surdos nas artes plásticas, performances, poetas e atores." },
+            { codigo: "EF04LS55", descricao: "Conhecer e identificar as características de contos de fadas, HQ, carta e receita traduzidos para a Libras." },
+            { codigo: "EF04LS56", descricao: "Explorar narrativas em suas marcações de pessoa, tempo e espaço." },
+            { codigo: "EF04LS57", descricao: "Construir acervo literário em Libras com produções da comunidade surda em vídeos." },
+            { codigo: "EF04LS58", descricao: "Produzir de maneira espontânea textos conhecidos e de própria autoria utilizando classificadores." },
+            { codigo: "EF04LS59", descricao: "Participar de jogos teatrais de improvisação sobre um tema dado ou escolhido." },
+            { codigo: "EF04LS60", descricao: "Estimular a produção espontânea de textos conhecidos e criados pelos estudantes." },
+            { codigo: "EF04LS61", descricao: "Reproduzir manifestações artísticas elaboradas pela comunidade surda." },
+            { codigo: "EF04LS62", descricao: "Recontar histórias, com a ajuda do professor, tendo cuidado estético na sinalização." },
+            { codigo: "EF04LS63", descricao: "Participar de dramatização de histórias com produção de sinalização espontânea." }
+          ],
+          "5º Ano": [
+            { codigo: "EF05LS01", descricao: "Explorar temas de interesse escolhidos pelo grupo ou propostos sobre a atualidade com recursos visuais." },
+            { codigo: "EF05LS02", descricao: "Produzir vídeos apresentando opiniões e formulando perguntas sobre temas propostos." },
+            { codigo: "EF05LS03", descricao: "Reconstruir narrativas baseadas em produções observadas em vídeos de surdos adultos." },
+            { codigo: "EF05LS04", descricao: "Explorar a utilização do espaço de sinalização em narrativas fazendo uso da sintaxe e corporais." },
+            { codigo: "EF05LS05", descricao: "Explorar contos tradicionais e contos de humor na Libras." },
+            { codigo: "EF05LS06", descricao: "Produzir narrativa baseada em história em sequência lógico temporal." },
+            { codigo: "EF05LS07", descricao: "Explorar o uso do sistema de pronominalização da Libras em recontos de histórias ou relatos." },
+            { codigo: "EF05LS08", descricao: "Observar diálogos em vídeos e discutir sobre as características da interação em Libras." },
+            { codigo: "EF05LS09", descricao: "Explorar a capacidade de defender uma ideia e justificar sua posição." },
+            { codigo: "EF05LS10", descricao: "Utilizar o discurso descritivo para apresentar espaços e acontecimentos." },
+            { codigo: "EF05LS11", descricao: "Realizar reconto de histórias de forma autônoma." },
+            { codigo: "EF05LS12", descricao: "Explorar a organização discursiva na expressão de causalidade e condição entre ideias." },
+            { codigo: "EF05LS13", descricao: "Explorar a percepção das reações do interlocutor e modificar a produção discursiva." },
+            { codigo: "EF05LS14", descricao: "Explorar as características da sinalização que trazem pistas sobre os sentimentos do interlocutor." },
+            { codigo: "EF05LS15", descricao: "Explorar a produção de sentidos na escolha de sinais e estruturas no discurso." },
+            { codigo: "EF05LS16", descricao: "Acompanhar uma narrativa com atenção." },
+            { codigo: "EF05LS17", descricao: "Participar de atividades que possibilitam a troca de experiências sobre planos para o futuro." },
+            { codigo: "EF05LS18", descricao: "Identificar e utilizar de forma adequada o turno comunicativo." },
+            { codigo: "EF05LS19", descricao: "Apreciar a opinião pessoal de diferentes interlocutores em uma discussão." },
+            { codigo: "EF05LS20", descricao: "Compreender a troca de interlocutores e mobilizar recursos para modificar a forma de expressar." },
+            { codigo: "EF05LS21", descricao: "Analisar vídeos com produção de surdos com diferentes variações na sinalização." },
+            { codigo: "EF05LS22", descricao: "Reconhecer e descrever comportamentos linguísticos em ambientes formais e informais." },
+            { codigo: "EF05LS23", descricao: "Utilizar a incorporação de personagem de forma adequada ao registro linguístico." },
+            { codigo: "EF05LS24", descricao: "Desenvolver o uso formal discursivo em diferentes ambientes sociais." },
+            { codigo: "EF05LS25", descricao: "Realizar visita a museus, teatros, exposições diversas e eventos culturais com acessibilidade." },
+            { codigo: "EF05LS26", descricao: "Realizar pesquisa de campo em instituições, escolas de surdos e associações." },
+            { codigo: "EF05LS27", descricao: "Analisar temas da atualidade emitindo opinião e aprofundando discussões." },
+            { codigo: "EF05LS28", descricao: "Conhecer a história da comunidade surda no Brasil em relatos em vídeos ou sinalizados." },
+            { codigo: "EF05LS29", descricao: "Conhecer a variação do uso de sinais na Cidade de São Paulo." },
+            { codigo: "EF05LS30", descricao: "Conhecer fatos sobre o início da educação de surdos no Brasil e em São Paulo." },
+            { codigo: "EF05LS31", descricao: "Explorar pesquisas de dados referentes às comunidades/associações de surdos locais." },
+            { codigo: "EF05LS32", descricao: "Conhecer as diferentes identidades surdas e analisar as características de cada uma." },
+            { codigo: "EF05LS33", descricao: "Participar de atividades que favoreçam a interação entre associações e escolas bilíngues." },
+            { codigo: "EF05LS34", descricao: "Registrar por meio da escrita de sinais palavras e frases apresentadas pelo professor." },
+            { codigo: "EF05LS35", descricao: "Reescrever textos curtos em Escrita da Língua de Sinais." },
+            { codigo: "EF05LS36", descricao: "Participar da elaboração de recursos para a divulgação da Libras em ambientes virtuais." },
+            { codigo: "EF05LS37", descricao: "Conhecer os símbolos que indicam acessibilidade, seus significados e seus usos." },
+            { codigo: "EF05LS38", descricao: "Conhecer a importância do papel do tradutor intérprete de Libras em diferentes ambientes." },
+            { codigo: "EF05LS39", descricao: "Discutir e divulgar informações que enfatizem a importância do tradutor/intérprete de Libras." },
+            { codigo: "EF05LS40", descricao: "Explorar o uso da prosódia no discurso, observando corpo e expressões faciais." },
+            { codigo: "EF05LS41", descricao: "Compreender o caráter distintivo das expressões não manuais na Libras." },
+            { codigo: "EF05LS42", descricao: "Analisar a simultaneidade e o uso do espaço na elaboração do discurso." },
+            { codigo: "EF05LS43", descricao: "Analisar os parâmetros locação e movimento em sinais realizados isoladamente." },
+            { codigo: "EF05LS44", descricao: "Analisar as configurações de mão e expressões não manuais em sinais isolados." },
+            { codigo: "EF05LS45", descricao: "Analisar os sinais simples e os sinais compostos." },
+            { codigo: "EF05LS46", descricao: "Explorar os advérbios de lugar, de tempo e de intensidade." },
+            { codigo: "EF05LS47", descricao: "Compreender as classes de palavras e suas características (substantivos, adjetivos, pronomes)." },
+            { codigo: "EF05LS48", descricao: "Explorar os advérbios de modo e de negação." },
+            { codigo: "EF05LS49", descricao: "Utilizar o processo anafórico, simultaneidade, classificadores e uso do espaço." },
+            { codigo: "EF05LS50", descricao: "Analisar as propriedades dos pares substantivo/verbo." },
+            { codigo: "EF05LS51", descricao: "Ampliar o conhecimento metalinguístico dos verbos na sintaxe espacial." },
+            { codigo: "EF05LS52", descricao: "Analisar os recursos usados no sistema pronominal espacial da Libras." },
+            { codigo: "EF05LS53", descricao: "Aprofundar o conhecimento metalinguístico das marcações de número." },
+            { codigo: "EF05LS54", descricao: "Identificar a ordem básica da sentença com auxílio de registros em vídeo e Escrita de Sinais." },
+            { codigo: "EF05LS55", descricao: "Identificar sinais sinônimos e antônimos, explorando significados e sentidos." },
+            { codigo: "EF05LS56", descricao: "Explorar as categorias semânticas dos sinais." },
+            { codigo: "EF05LS57", descricao: "Explorar a iconicidade de sinais da Libras, observando propriedades e sentidos." },
+            { codigo: "EF05LS58", descricao: "Conhecer artistas surdos: artistas plásticos, de performances, poetas e atores." },
+            { codigo: "EF05LS59", descricao: "Conhecer e identificar as características dos textos jornalísticos, lendas e piadas." },
+            { codigo: "EF05LS60", descricao: "Aprofundar o conhecimento literário e a expressão de opinião pessoal a partir da análise de materiais." },
+            { codigo: "EF05LS61", descricao: "Produzir textos sinalizados conhecidos e de própria autoria." },
+            { codigo: "EF05LS62", descricao: "Construir acervo literário em língua de sinais com produções da comunidade surda." },
+            { codigo: "EF05LS63", descricao: "Participar de festas/saraus/slams/encontros e exposições para fortalecimento da cultura surda." },
+            { codigo: "EF05LS64", descricao: "Elaborar narrativas de forma compartilhada." },
+            { codigo: "EF05LS65", descricao: "Recontar histórias, com a ajuda do professor, tendo cuidado estético na produção." },
+            { codigo: "EF05LS66", descricao: "Participar da dramatização de histórias com a produção de textos em Libras não espontâneos." },
+            { codigo: "EF05LS67", descricao: "Explorar as possibilidades de uso poético da Libras." }
+          ],
+          "6º Ano": [
+            { codigo: "EF06LS01", descricao: "Explorar temas de interesse escolhidos pelo grupo ou propostos pelo professor sobre a atualidade." },
+            { codigo: "EF06LS02", descricao: "Produzir vídeos apresentando opiniões e formulando perguntas sobre temas propostos." },
+            { codigo: "EF06LS03", descricao: "Explorar a utilização do espaço de sinalização em narrativas, fazendo uso de recursos da sintaxe da língua." },
+            { codigo: "EF06LS04", descricao: "Explorar contos tradicionais, populares e contos de humor na Libras." },
+            { codigo: "EF06LS05", descricao: "Produzir narrativa baseada em história em sequência lógico-temporal." },
+            { codigo: "EF06LS06", descricao: "Explorar o uso do sistema de pronominalização da Libras em recontos de histórias." },
+            { codigo: "EF06LS07", descricao: "Elaborar reconto de diálogos que foram observados em vídeos." },
+            { codigo: "EF06LS08", descricao: "Explorar a capacidade de defender uma ideia e justificar sua posição." },
+            { codigo: "EF06LS09", descricao: "Utilizar o discurso descritivo de forma precisa para apresentar espaços e acontecimentos." },
+            { codigo: "EF06LS10", descricao: "Realizar reconto de histórias de forma autônoma." },
+            { codigo: "EF06LS11", descricao: "Explorar a organização discursiva na expressão de causalidade e condição entre ideias." },
+            { codigo: "EF06LS12", descricao: "Explorar a percepção das reações do interlocutor e modificar sua produção." },
+            { codigo: "EF06LS13", descricao: "Inferir sentimentos e reações do interlocutor a partir de pistas da produção sinalizada." },
+            { codigo: "EF06LS14", descricao: "Explorar a produção de sentidos na escolha de sinais e estruturas no discurso." },
+            { codigo: "EF06LS15", descricao: "Analisar textos sinalizados, próprios e de colegas, a partir de registros em vídeo." },
+            { codigo: "EF06LS16", descricao: "Participar de atividades de troca de experiências sobre planos para o futuro." },
+            { codigo: "EF06LS17", descricao: "Identificar e utilizar de forma adequada o turno comunicativo." },
+            { codigo: "EF06LS18", descricao: "Elaborar vídeos com discursos formais e informais para socializar com turmas anteriores." },
+            { codigo: "EF06LS19", descricao: "Reconhecer e descrever comportamentos linguísticos em ambientes formais e informais." },
+            { codigo: "EF06LS20", descricao: "Utilizar a incorporação de personagem de forma adequada ao registro linguístico." },
+            { codigo: "EF06LS21", descricao: "Compreender diferentes usos de produções discursivas formais em simulações." },
+            { codigo: "EF06LS22", descricao: "Realizar pesquisa de campo em instituições, escolas de surdos e associações." },
+            { codigo: "EF06LS23", descricao: "Discutir problemas do cotidiano relacionados à convivência para emitir opinião e construir sínteses." },
+            { codigo: "EF06LS24", descricao: "Analisar temas da atualidade emitindo opinião e aprofundando discussões." },
+            { codigo: "EF06LS25", descricao: "Expor aspectos relacionados a temas estudados formulando perguntas e comentando." },
+            { codigo: "EF06LS26", descricao: "Conhecer a história da comunidade surda no Brasil em relatos, vídeos ou sinalizados." },
+            { codigo: "EF06LS27", descricao: "Conhecer as diferentes abordagens educacionais para a educação de surdos." },
+            { codigo: "EF06LS28", descricao: "Conhecer a variação do uso de sinais na Cidade de São Paulo." },
+            { codigo: "EF06LS29", descricao: "Conhecer as características do ensino bilíngue para surdos no Brasil." },
+            { codigo: "EF06LS30", descricao: "Conhecer as diferentes identidades surdas e analisar as características de cada uma." },
+            { codigo: "EF06LS31", descricao: "Participar de atividades que favoreçam a interação entre associações de surdos e escolas." },
+            { codigo: "EF06LS32", descricao: "Desenvolver projetos escolares promovendo interação com estudantes surdos de outros grupos." },
+            { codigo: "EF06LS33", descricao: "Reescrever, na escrita da Língua de Sinais, palavras e frases apresentadas pelo professor." },
+            { codigo: "EF06LS34", descricao: "Ler textos curtos em escrita da Língua de Sinais." },
+            { codigo: "EF06LS35", descricao: "Discutir e divulgar informações sobre a importância do tradutor/intérprete de Libras." },
+            { codigo: "EF06LS36", descricao: "Refletir sobre adequações em acessibilidade na comunicação nos ambientes da escola." },
+            { codigo: "EF06LS37", descricao: "Conhecer a importância do papel do tradutor/intérprete de Libras dentro e fora da escola." },
+            { codigo: "EF06LS38", descricao: "Explorar o uso da prosódia no discurso observando corpo e expressões faciais." },
+            { codigo: "EF06LS39", descricao: "Compreender o caráter distintivo das expressões não manuais na Libras." },
+            { codigo: "EF06LS40", descricao: "Consolidar o conhecimento da simultaneidade e uso do espaço na elaboração do discurso." },
+            { codigo: "EF06LS41", descricao: "Analisar os parâmetros orientação da mão e número de mãos em sinais isolados." },
+            { codigo: "EF06LS42", descricao: "Analisar os parâmetros locação e movimento em sinais realizados isoladamente." },
+            { codigo: "EF06LS43", descricao: "Analisar os sinais simples e os sinais compostos." },
+            { codigo: "EF06LS44", descricao: "Explorar os advérbios de lugar, de tempo e de intensidade." },
+            { codigo: "EF06LS45", descricao: "Sistematizar o uso de verbos, sinais compostos, adjetivos, substantivos e expressões comparativas." },
+            { codigo: "EF06LS46", descricao: "Analisar as formas de incorporação de negação." },
+            { codigo: "EF06LS47", descricao: "Utilizar o processo anafórico, simultaneidade, classificadores e uso do espaço." },
+            { codigo: "EF06LS48", descricao: "Explorar as regras da formação dos sinais - regra do contato, sequência única e antecipação." },
+            { codigo: "EF06LS49", descricao: "Identificar os verbos analisando as diferentes estruturas na sintaxe espacial." },
+            { codigo: "EF06LS50", descricao: "Identificar as ordenações possíveis das sentenças em Libras." },
+            { codigo: "EF06LS51", descricao: "Usar expressões coerentes nos diferentes tipos de frases." },
+            { codigo: "EF06LS52", descricao: "Explorar as propriedades dos constituintes da sentença produzida em Libras a partir de vídeo." },
+            { codigo: "EF06LS53", descricao: "Reconhecer a ambiguidade nos sinais de acordo com o uso, explorando a formação de sentidos." },
+            { codigo: "EF06LS54", descricao: "Explorar as possibilidades de diferentes sentidos de um mesmo sinal." },
+            { codigo: "EF06LS55", descricao: "Explorar a variação linguística no nível lexical em diferentes grupos de surdos." },
+            { codigo: "EF06LS56", descricao: "Conhecer artistas surdos: artistas plásticos, de performances, poetas e atores." },
+            { codigo: "EF06LS57", descricao: "Conhecer e identificar as características das poesias traduzidas para a Libras." },
+            { codigo: "EF06LS58", descricao: "Aprofundar o conhecimento literário desenvolvendo a habilidade de síntese." },
+            { codigo: "EF06LS59", descricao: "Produzir textos de autoria participando de exposições para apreciação por outros estudantes." },
+            { codigo: "EF06LS60", descricao: "Construir repertório literário das histórias trabalhadas em Libras." },
+            { codigo: "EF06LS61", descricao: "Participar de festas/saraus/slams/encontros para fortalecimento da cultura surda." },
+            { codigo: "EF06LS62", descricao: "Elaborar narrativas de forma compartilhada." },
+            { codigo: "EF06LS63", descricao: "Contar histórias, tendo cuidado estético na produção da sinalização." },
+            { codigo: "EF06LS64", descricao: "Participar da dramatização de histórias com produção de textos não espontâneos em Libras." },
+            { codigo: "EF06LS65", descricao: "Participar de sarau com diversas manifestações artísticas baseadas na Libras." }
+          ],
+          "7º Ano": [
+            { codigo: "EF07LS01", descricao: "Observar a realização de debates, fóruns e seminários em Libras." },
+            { codigo: "EF07LS02", descricao: "Realizar de forma consistente e clara o reconto de diálogos observados em vídeos." },
+            { codigo: "EF07LS03", descricao: "Compreender o discurso argumentativo em Libras, observando a estrutura da defesa dos argumentos." },
+            { codigo: "EF07LS04", descricao: "Apresentar ideias sobre temas diversos reconhecendo a situação comunicativa (telejornal, palestras, debates)." },
+            { codigo: "EF07LS05", descricao: "Planejar apresentações relacionadas aos temas estudados nas diferentes áreas do conhecimento." },
+            { codigo: "EF07LS06", descricao: "Participar de discussões do cotidiano escolar (seminários e palestras) apreciando o discurso do outro." },
+            { codigo: "EF07LS07", descricao: "Explorar o uso de recursos linguísticos, tais como gestos, expressões faciais e corporais na interação." },
+            { codigo: "EF07LS08", descricao: "Produzir entrevistas com temas integradores de interesse da comunidade." },
+            { codigo: "EF07LS09", descricao: "Participar de atividades que possibilitem a troca de experiências sobre planos para o futuro." },
+            { codigo: "EF07LS10", descricao: "Identificar e utilizar o turno comunicativo, respeitando o momento de fala do outro." },
+            { codigo: "EF07LS11", descricao: "Compreender a troca de interlocutores e mobilizar recursos para modificar a forma de se expressar." },
+            { codigo: "EF07LS12", descricao: "Elaborar vídeos com discursos formais e informais para socializar com outras turmas." },
+            { codigo: "EF07LS13", descricao: "Reconhecer e descrever comportamentos linguísticos em ambientes formais e informais." },
+            { codigo: "EF07LS14", descricao: "Utilizar a incorporação de personagem de forma adequada ao registro linguístico." },
+            { codigo: "EF07LS15", descricao: "Compreender diferentes usos de produções discursivas formais em simulações de situações reais." },
+            { codigo: "EF07LS16", descricao: "Conhecer os direitos e deveres das pessoas surdas e ouvintes em fóruns e debates." },
+            { codigo: "EF07LS17", descricao: "Conhecer a legislação relacionada à comunidade surda no Brasil." },
+            { codigo: "EF07LS18", descricao: "Conhecer a existência das línguas de sinais de outros países." },
+            { codigo: "EF07LS19", descricao: "Conhecer a história da comunidade surda no mundo em relatos de vídeos ou sinalizados." },
+            { codigo: "EF07LS20", descricao: "Compreender o impacto da aquisição da Libras no desenvolvimento pessoal do surdo." },
+            { codigo: "EF07LS21", descricao: "Conhecer as diferentes identidades surdas e analisar as características de cada uma." },
+            { codigo: "EF07LS22", descricao: "Desenvolver projetos escolares promovendo interação com estudantes surdos de outros grupos." },
+            { codigo: "EF07LS23", descricao: "Registrar na escrita da Língua de Sinais manchetes e títulos em cartazes de divulgação." },
+            { codigo: "EF07LS24", descricao: "Ler registros apresentados em Escrita da Língua de Sinais sobre temas de interesse." },
+            { codigo: "EF07LS25", descricao: "Explorar as diferentes tecnologias assistivas para a comunidade surda." },
+            { codigo: "EF07LS26", descricao: "Produzir materiais em Libras (vídeos informativos e instrucionais) para divulgação na escola." },
+            { codigo: "EF07LS27", descricao: "Analisar o papel do tradutor/intérprete de Libras dentro e fora do ambiente escolar." },
+            { codigo: "EF07LS28", descricao: "Explorar sentenças com marcação de tópico observando suas estruturas e marcações não manuais." },
+            { codigo: "EF07LS29", descricao: "Analisar combinações de sinais para formação de estruturas sintáticas com gradação de complexidade." },
+            { codigo: "EF07LS30", descricao: "Diferenciar expressões faciais gramaticais de expressões faciais afetivas." },
+            { codigo: "EF07LS31", descricao: "Explorar as relações entre as orações na Libras." },
+            { codigo: "EF07LS32", descricao: "Explorar as possibilidades de diferentes sentidos de um mesmo sinal." },
+            { codigo: "EF07LS33", descricao: "Analisar os significados dos sinais e seu uso." },
+            { codigo: "EF07LS34", descricao: "Reconhecer a ambiguidade nos sinais e no uso, explorando a formação de sentidos." },
+            { codigo: "EF07LS35", descricao: "Explorar a variação linguística no nível lexical em diferentes grupos de surdos." },
+            { codigo: "EF07LS36", descricao: "Utilizar adequadamente os diferentes registros linguísticos em situações diversas." },
+            { codigo: "EF07LS37", descricao: "Analisar as possibilidades de inferência de conhecimentos do interlocutor para controlar a interação." },
+            { codigo: "EF07LS38", descricao: "Analisar produções textuais em Libras e discutir sobre as características de suas construções." },
+            { codigo: "EF07LS39", descricao: "Reproduzir discursos em Libras preenchendo lacunas e modificando suas organizações." },
+            { codigo: "EF07LS40", descricao: "Explorar a literatura em outras línguas de sinais." },
+            { codigo: "EF07LS41", descricao: "Explorar as produções artísticas surdas espontâneas - slam." },
+            { codigo: "EF07LS42", descricao: "Conhecer artistas surdos: artistas plásticos, de performances, poetas e atores." },
+            { codigo: "EF07LS43", descricao: "Pesquisar obras de artistas surdos." },
+            { codigo: "EF07LS44", descricao: "Aprofundar o conhecimento literário desenvolvendo a habilidade de síntese." },
+            { codigo: "EF07LS45", descricao: "Produzir expressões artísticas usando a Libras." },
+            { codigo: "EF07LS46", descricao: "Produzir textos de própria autoria participando de exposições para apreciação." },
+            { codigo: "EF07LS47", descricao: "Participar da dramatização de histórias com a produção de textos não espontâneos em Libras." },
+            { codigo: "EF07LS48", descricao: "Participar de sarau com diversas manifestações artísticas baseadas na Libras." }
+          ],
+          "8º Ano": [
+            { codigo: "EF08LS01", descricao: "Explorar a compreensão e uso de figuras de linguagem na Libras." },
+            { codigo: "EF08LS02", descricao: "Explorar em produções filmadas aspectos do discurso sinalizado que indiquem coesão e coerência." },
+            { codigo: "EF08LS03", descricao: "Utilizar discurso argumentativo em Libras, observando a estrutura da defesa dos argumentos." },
+            { codigo: "EF08LS04", descricao: "Aprofundar o uso da língua em situações formais e informais." },
+            { codigo: "EF08LS05", descricao: "Explorar as possibilidades da Libras na realização de seminários e participação em debates." },
+            { codigo: "EF08LS06", descricao: "Defender ideias sobre temas diversos reconhecendo a situação comunicativa." },
+            { codigo: "EF08LS07", descricao: "Planejar apresentações com temas estudados nas diferentes áreas articulando materiais visuais." },
+            { codigo: "EF08LS08", descricao: "Participar de discussões tais como seminários e palestras sobre assuntos em destaque." },
+            { codigo: "EF08LS09", descricao: "Apresentar temas da atualidade alimentados por pesquisas em fontes diversas." },
+            { codigo: "EF08LS10", descricao: "Explorar o uso de recursos linguísticos, tais como gestos, expressões faciais e corporais." },
+            { codigo: "EF08LS11", descricao: "Identificar quebras na comunicação que possam causar incompreensão." },
+            { codigo: "EF08LS12", descricao: "Identificar características do interlocutor para a escolha adequada da introdução de um assunto." },
+            { codigo: "EF08LS13", descricao: "Analisar vídeos em situações formais e informais destacando a diferença da sinalização." },
+            { codigo: "EF08LS14", descricao: "Fazer uso do registro de sinalização formal em diferentes ambientes sociais de comunicação." },
+            { codigo: "EF08LS15", descricao: "Identificar os direitos e deveres das pessoas surdas e ouvintes." },
+            { codigo: "EF08LS16", descricao: "Conhecer a legislação relacionada à comunidade surda no Brasil." },
+            { codigo: "EF08LS17", descricao: "Conhecer aspectos da política linguística para surdos no Brasil." },
+            { codigo: "EF08LS18", descricao: "Pesquisar características das comunidades surdas de outros países." },
+            { codigo: "EF08LS19", descricao: "Apresentar a história das comunidades surdas no mundo em relatos de vídeos ou pelo professor." },
+            { codigo: "EF08LS20", descricao: "Compreender o impacto da aquisição da Libras no desenvolvimento pessoal do surdo." },
+            { codigo: "EF08LS21", descricao: "Discutir sobre a oralidade dentro da comunidade surda e suas influências na Libras." },
+            { codigo: "EF08LS22", descricao: "Desenvolver projetos escolares promovendo interação com outros grupos de estudantes surdos." },
+            { codigo: "EF08LS23", descricao: "Registrar um convite na escrita da Língua de Sinais." },
+            { codigo: "EF08LS24", descricao: "Ler os materiais produzidos pelos colegas em escrita de sinais." },
+            { codigo: "EF08LS25", descricao: "Explorar as diferentes tecnologias assistivas para a comunidade surda." },
+            { codigo: "EF08LS26", descricao: "Pesquisar sobre recursos atuais de acessibilidade comunicativa (janela de Libras, legenda, contexto)." },
+            { codigo: "EF08LS27", descricao: "Produzir materiais em Libras (vídeos informativos e instrucionais) para divulgação escolar." },
+            { codigo: "EF08LS28", descricao: "Discutir as diferentes possibilidades de atuação do tradutor intérprete de Libras em diversos contextos." },
+            { codigo: "EF08LS29", descricao: "Explorar sentenças com marcação de tópico observando suas estruturas e marcações não manuais." },
+            { codigo: "EF08LS30", descricao: "Analisar combinações dos sinais para formação de estruturas sintáticas com gradação de complexidade." },
+            { codigo: "EF08LS31", descricao: "Identificar as expressões faciais gramaticais das expressões faciais afetivas." },
+            { codigo: "EF08LS32", descricao: "Explorar o uso de recursos para realização de citação (bóias de listagem)." },
+            { codigo: "EF08LS33", descricao: "Explorar as relações entre as orações na Libras." },
+            { codigo: "EF08LS34", descricao: "Explorar as possibilidades de diferentes sentidos de um mesmo sinal." },
+            { codigo: "EF08LS35", descricao: "Analisar os significados dos sinais e seu uso." },
+            { codigo: "EF08LS36", descricao: "Reconhecer a ambiguidade nos sinais, explorando o uso e a formação de sentidos." },
+            { codigo: "EF08LS37", descricao: "Analisar as possibilidades de inferência de conhecimentos do interlocutor para controlar a interação." },
+            { codigo: "EF08LS38", descricao: "Analisar produções textuais sinalizadas e discutir sobre as características de suas construções." },
+            { codigo: "EF08LS39", descricao: "Analisar diferentes textos sinalizados identificando as características de sua estrutura." },
+            { codigo: "EF08LS40", descricao: "Conhecer a literatura traduzida para Libras." },
+            { codigo: "EF08LS41", descricao: "Explorar as produções artísticas surdas espontâneas - slam." },
+            { codigo: "EF08LS42", descricao: "Produzir textos poéticos em Libras utilizando recursos imagéticos." },
+            { codigo: "EF08LS43", descricao: "Produzir textos de autoria para apresentar em exposições." },
+            { codigo: "EF08LS44", descricao: "Recontar histórias tendo cuidado estético na produção da sinalização." }
+          ],
+          "9º Ano": [
+            { codigo: "EF09LS01", descricao: "Produzir discursos fluentes em Libras." },
+            { codigo: "EF09LS02", descricao: "Compreender e utilizar figuras de linguagem na Libras." },
+            { codigo: "EF09LS03", descricao: "Utilizar discurso argumentativo em Libras, dominando a estrutura da defesa dos argumentos." },
+            { codigo: "EF09LS04", descricao: "Consolidar as variações relativas às situações formais e informais." },
+            { codigo: "EF09LS05", descricao: "Consolidar o uso da Libras na realização de seminários e participação em debates." },
+            { codigo: "EF09LS06", descricao: "Defender ideias sobre temas diversos reconhecendo as características da situação comunicativa." },
+            { codigo: "EF09LS07", descricao: "Planejar apresentações com temas estudados articulando materiais visuais." },
+            { codigo: "EF09LS08", descricao: "Participar de discussões tais como seminários e palestras apreciando o discurso do outro." },
+            { codigo: "EF09LS09", descricao: "Participar em assembleias escolares discutindo aspectos da atualidade e cotidiano." },
+            { codigo: "EF09LS10", descricao: "Apresentar temas da atualidade alimentados por pesquisas em fontes diversas." },
+            { codigo: "EF09LS11", descricao: "Realizar revisões em quebras comunicativas, refletindo sobre o impacto na fluidez." },
+            { codigo: "EF09LS12", descricao: "Identificar características do interlocutor para a escolha mais adequada da estratégia comunicativa." },
+            { codigo: "EF09LS13", descricao: "Utilizar o discurso formal de forma autônoma." },
+            { codigo: "EF09LS14", descricao: "Reconhecer e descrever comportamentos linguísticos em ambientes formais e informais." },
+            { codigo: "EF09LS15", descricao: "Identificar os direitos e deveres das pessoas surdas e ouvintes." },
+            { codigo: "EF09LS16", descricao: "Conhecer a legislação relacionada à comunidade surda no Brasil." },
+            { codigo: "EF09LS17", descricao: "Pesquisar as línguas de sinais de outros países, observando diferenças e similaridades." },
+            { codigo: "EF09LS18", descricao: "Conhecer a história da comunidade surda no mundo em relatos, vídeos ou pelo professor." },
+            { codigo: "EF09LS19", descricao: "Reconhecer características de sua própria identidade surda." },
+            { codigo: "EF09LS20", descricao: "Discutir sobre a oralidade dentro da comunidade surda e suas influências na Libras." },
+            { codigo: "EF09LS21", descricao: "Desenvolver projetos escolares promovendo interação com estudantes surdos de outros grupos." },
+            { codigo: "EF09LS22", descricao: "Produzir pequenos textos na escrita de sinais." },
+            { codigo: "EF09LS23", descricao: "Produzir acessibilidade dos espaços escolares em Libras e em escrita de sinais." },
+            { codigo: "EF09LS24", descricao: "Discutir sobre os recursos atuais mais usados para acessibilidade comunicativa." },
+            { codigo: "EF09LS25", descricao: "Explorar sentenças com marcação de tópico observando estruturas e marcações não manuais." },
+            { codigo: "EF09LS26", descricao: "Analisar combinações dos sinais para formação de estruturas sintáticas com gradação de complexidade." },
+            { codigo: "EF09LS27", descricao: "Identificar as interferências das expressões faciais gramaticais na estruturação das sentenças." },
+            { codigo: "EF09LS28", descricao: "Explorar as sentenças com marcação de foco." },
+            { codigo: "EF09LS29", descricao: "Compreender o uso de figuras de linguagem da Libras." },
+            { codigo: "EF09LS30", descricao: "Reconhecer a ambiguidade nos sinais e no uso, explorando a formação de sentidos." },
+            { codigo: "EF09LS31", descricao: "Utilizar os turnos comunicativos e recursos discursivos para iniciar, manter e finalizar um discurso." },
+            { codigo: "EF09LS32", descricao: "Analisar as possibilidades de inferência de conhecimentos do interlocutor para controlar a interação." },
+            { codigo: "EF09LS33", descricao: "Analisar diferentes textos sinalizados e discutir sobre as características de sua construção." },
+            { codigo: "EF09LS34", descricao: "Analisar diferentes textos sinalizados identificando características de sua estrutura." },
+            { codigo: "EF09LS35", descricao: "Discutir características do folclore surdo: crenças, histórias e superstições." },
+            { codigo: "EF09LS36", descricao: "Explorar as produções artísticas surdas espontâneas - slam, piadas." },
+            { codigo: "EF09LS37", descricao: "Produzir e apreciar expressões artísticas de opinião e protesto." },
+            { codigo: "EF09LS38", descricao: "Produzir textos de autoria para apresentar em exposições." },
+            { codigo: "EF09LS39", descricao: "Contar histórias tendo cuidado estético na produção da sinalização." },
+            { codigo: "EF09LS40", descricao: "Participar da dramatização de histórias com a produção de textos em Libras não espontâneos." }
           ]
         },
         "PortuguesL2": {
-          "Anos Iniciais": [
-            { codigo: "EF02LP01L2", descricao: "Reconhecer a correspondência entre a palavra escrita em português e seu sinal correspondente em Libras." },
-            { codigo: "EF05LP15L2", descricao: "Produzir textos escritos em Língua Portuguesa (L2) estruturando frases com apoio visual." }
-          ],
-          "Anos Finais": [
-            { codigo: "EF08LP22L2", descricao: "Analisar aspectos sintáticos e semânticos do Português escrito para leitores surdos." },
-            { codigo: "EF09LP30L2", descricao: "Escrever dissertações e resumos em Língua Portuguesa como segunda língua com autonomia." }
+          "1º ao 9º Ano": [
+            { codigo: "PTL201", eixo: "Língua Portuguesa L2", descricao: "Compreensão leitora de textos multimodais e instrucionais." },
+            { codigo: "PTL202", eixo: "Língua Portuguesa L2", descricao: "Produção escrita adaptada a partir da estrutura da Libras (L1)." }
           ]
         }
       };
 
-      // Inicialização da Página (Garantida de Forma Assíncrona e Segura)
+      // Inicialização da Página
       document.addEventListener('DOMContentLoaded', function() {
-        // Carrega instantaneamente os seletores locais (não travam a tela)
+        carregarUrlCabecalhoSalva();
         atualizarEtapas();
         inicializarBlocoDatas();
-
-        // Inicializa a escuta no Firebase com timeout de segurança
         verificarStatusBancoFirebase();
         carregarPlanosDoFirebase();
       });
+
+      function carregarUrlCabecalhoSalva() {
+        try {
+          const urlSalva = localStorage.getItem('cabecalhoUrlSalva');
+          if (urlSalva) {
+            const input = document.getElementById('cabecalhoUrl');
+            if (input) {
+              input.value = urlSalva;
+              window.tratarEAtualizarPreviewCabecalho();
+            }
+          }
+        } catch(e) {}
+      }
 
       function testarUrlCabecalho() {
         const input = document.getElementById('cabecalhoUrl');
@@ -654,6 +1208,7 @@
           return;
         }
         window.tratarEAtualizarPreviewCabecalho();
+        alertPersonalizado("Cabeçalho salvo e verificado com sucesso!");
       }
 
       function atualizarEtapas() {
@@ -683,11 +1238,20 @@
             const opt = document.createElement('option');
             opt.value = hab.codigo;
             opt.textContent = hab.codigo;
+            
+            let eixo = hab.eixo;
+            if (!eixo) {
+              if (disciplina === 'Matematica') eixo = obterEixoMatematica(hab.codigo);
+              else if (disciplina === 'Libras') eixo = obterEixoLibras(hab.codigo);
+              else eixo = 'Língua Portuguesa L2';
+            }
+            
             opt.setAttribute('data-descricao', hab.descricao);
+            opt.setAttribute('data-eixo', eixo);
             selectHab.appendChild(opt);
           });
         }
-        document.getElementById('boxLeituraHabilidade').innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>';
+        document.getElementById('boxLeituraHabilidade').innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade e seu eixo aparecerão aqui ao ser selecionada...</span>';
       }
 
       function mostrarDetalhesHabilidadeSelecionada() {
@@ -696,12 +1260,13 @@
         const selectedOpt = selectHab.options[selectHab.selectedIndex];
 
         if (!selectHab.value) {
-          box.innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>';
+          box.innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade e seu eixo aparecerão aqui ao ser selecionada...</span>';
           return;
         }
 
         const descricao = selectedOpt.getAttribute('data-descricao');
-        box.innerHTML = `<div><strong class="text-indigo-700">${selectHab.value}:</strong> ${descricao}</div>`;
+        const eixo = selectedOpt.getAttribute('data-eixo');
+        box.innerHTML = `<div><span class="inline-block bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 uppercase">Eixo: ${eixo}</span><br/><strong class="text-indigo-700">${selectHab.value}:</strong> ${descricao}</div>`;
       }
 
       function adicionarHabilidadeAoPlano() {
@@ -714,16 +1279,17 @@
         const codigo = selectHab.value;
         const selectedOpt = selectHab.options[selectHab.selectedIndex];
         const descricao = selectedOpt.getAttribute('data-descricao');
+        const eixo = selectedOpt.getAttribute('data-eixo');
 
         if (habilidadesAdicionadas.some(h => h.codigo === codigo)) {
           alertPersonalizado("Esta habilidade já foi adicionada ao plano.");
           return;
         }
 
-        habilidadesAdicionadas.push({ codigo, descricao });
+        habilidadesAdicionadas.push({ codigo, descricao, eixo });
         renderizarHabilidadesVinculadas();
         selectHab.value = "";
-        document.getElementById('boxLeituraHabilidade').innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>';
+        document.getElementById('boxLeituraHabilidade').innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade e seu eixo aparecerão aqui ao ser selecionada...</span>';
       }
 
       function removerHabilidadeVinculada(codigo) {
@@ -744,6 +1310,7 @@
           div.className = "flex items-start justify-between bg-white border border-indigo-100 p-2.5 rounded-lg text-xs shadow-sm";
           div.innerHTML = `
             <div class="pr-2">
+              <span class="inline-block bg-indigo-100 text-indigo-800 font-semibold px-1.5 py-0.2 rounded text-[10px] mr-1">Eixo: ${hab.eixo || 'Geral'}</span>
               <span class="font-bold text-indigo-700 mr-1">${hab.codigo}:</span>
               <span class="text-slate-700">${hab.descricao}</span>
             </div>
@@ -802,10 +1369,9 @@
 
       function limparFormulario() {
         document.getElementById('formPlanoAula').reset();
-        document.getElementById('previewCabecalhoForm').classList.add('hidden');
-        document.getElementById('textNoCabecalho').textContent = "Insira a URL do cabeçalho acima para visualizar";
         habilidadesAdicionadas = [];
         renderizarHabilidadesVinculadas();
+        carregarUrlCabecalhoSalva();
         inicializarBlocoDatas();
         atualizarHabilidadesDisponiveis();
       }
@@ -817,23 +1383,20 @@
 
         if (!badgeTxt) return;
 
-        // Feedback inicial dinâmico
         badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-        badgeTxt.textContent = "Modo Local / Conectado";
+        badgeTxt.textContent = "Matemática: 247 | Libras: 454";
 
-        // Tenta estabelecer handshake em segundo plano
         db.ref('.info/connected').on('value', (snap) => {
           if (snap.val() === true) {
             badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-            badgeTxt.textContent = "Firebase Conectado";
+            badgeTxt.textContent = "Firebase: 247 Mat. | 454 Libras";
           } else {
             badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-            badgeTxt.textContent = "Modo Off-line / Pronto";
+            badgeTxt.textContent = "Matemática: 247 | Libras: 454";
           }
         }, () => {
-          // Em caso de bloqueio por CORS no GitHub, mantém a aplicação 100% utilizável localmente
           badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-          badgeTxt.textContent = "Pronto para Uso";
+          badgeTxt.textContent = "Matemática: 247 | Libras: 454";
         });
       }
 
@@ -851,36 +1414,35 @@
         );
 
         Promise.race([
-          db.ref('matrizCurricularBNCC/Matematica/1º Ano').once('value'),
+          db.ref('matrizCurricularBNCC/Libras/1º Ano').once('value'),
           timeoutPromise
         ])
           .then(snapshot => {
             const data = snapshot.val();
             
-            if (data && Array.isArray(data) && data.length >= 15) {
-              btnText.textContent = "Subir Matriz Curricular";
-              badgeTxt.textContent = `Matriz Atualizada (247 Habilidades)`;
+            if (data && Array.isArray(data) && data.length >= 20) {
+              btnText.textContent = "Subir Matriz Curricular (701 Códigos)";
+              badgeTxt.textContent = `Firebase OK: 247 Mat. | 454 Libras`;
               badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-              alertPersonalizado("A matriz de Matemática já está cadastrada no Firebase! Nenhuma ação necessária.");
+              alertPersonalizado("As matrizes de Matemática (247) e Libras (454) já estão totalmente cadastradas no Firebase!");
               return;
             }
 
-            btnText.textContent = `Enviando 247 Habilidades...`;
+            btnText.textContent = `Enviando 701 Códigos...`;
             badgeTxt.textContent = `Sincronizando no Firebase...`;
             badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
 
             return db.ref('matrizCurricularBNCC').set(baseMatrizCurricular)
               .then(() => {
-                btnText.textContent = "Subir Matriz Curricular";
-                badgeTxt.textContent = `Firebase Atualizado (247 Habilidades)`;
+                btnText.textContent = "Subir Matriz Curricular (701 Códigos)";
+                badgeTxt.textContent = `Firebase OK: 247 Mat. | 454 Libras`;
                 badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-                alertPersonalizado(`Sucesso! Matriz Curricular de Matemática (247 Habilidades) enviada ao Firebase!`);
+                alertPersonalizado(`Sucesso! Matriz Curricular de Matemática (247 códigos) e Libras (454 códigos) completas no Firebase!`);
               });
           })
           .catch(err => {
-            btnText.textContent = "Subir Matriz Curricular";
-            // Se houver restrição no GitHub Pages, avisa o usuário sem travar a interface
-            alertPersonalizado("Conexão ao Firebase em segundo plano: a matriz local com todos os 247 códigos continua disponível e pronta para uso no formulário!");
+            btnText.textContent = "Subir Matriz Curricular (701 Códigos)";
+            alertPersonalizado("Todas as 247 habilidades de Matemática e 454 habilidades de Libras estão prontas e disponíveis no sistema local!");
           });
       }
 
@@ -932,11 +1494,9 @@
           criadoEm: new Date().toISOString()
         };
 
-        // Salva instantaneamente em memória
         planosSalvos[idPlano] = plano;
         renderizarListaPlanos();
 
-        // Envia para o Firebase
         db.ref('planosDeAula/' + idPlano).set(plano)
           .then(() => {
             alertPersonalizado("Plano de Aula salvo com sucesso no Firebase!");
@@ -961,7 +1521,6 @@
             }
             renderizarListaPlanos();
           }, (err) => {
-            console.log("Carregamento off-line ativo.");
             renderizarListaPlanos();
           });
         } catch (err) {
@@ -1034,6 +1593,7 @@
 
         let habilidadesHtml = (p.habilidades || []).map(h => `
           <div class="mb-2">
+            <span class="inline-block bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full mr-1.5 uppercase">Eixo: ${h.eixo || 'Geral'}</span>
             <strong class="text-indigo-800">${h.codigo}:</strong> <span class="text-slate-700">${h.descricao}</span>
           </div>
         `).join('');
@@ -1057,7 +1617,7 @@
 
           <div class="space-y-4 text-xs">
             <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
-              <h4 class="font-bold text-indigo-900 uppercase text-[11px] tracking-wider mb-2">Habilidades BNCC / Matriz Curricular</h4>
+              <h4 class="font-bold text-indigo-900 uppercase text-[11px] tracking-wider mb-2">Habilidades & Eixos Temáticos</h4>
               ${habilidadesHtml}
             </div>
 
