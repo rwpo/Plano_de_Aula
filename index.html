@@ -439,6 +439,26 @@
   <!-- SCRIPT DE LÓGICA E BANCO DE DADOS -->
   <script>
     // -------------------------------------------------------------
+    // CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE DATABASE
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyBaT-6CMyUINhJmzBqe-is6c8KrtY0r1oU",
+      authDomain: "planoaulabncc.firebaseapp.com",
+      projectId: "planoaulabncc",
+      storageBucket: "planoaulabncc.firebasestorage.app",
+      messagingSenderId: "341072016026",
+      appId: "1:341072016026:web:ba69c02b894763591a6523"
+    };
+
+    // Inicialização da instância do Firebase e referências às tabelas/nós
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    const planosRef = db.ref('planosDeAula');
+    const configRef = db.ref('configuracoes/cabecalhoUrl');
+
+    // -------------------------------------------------------------
     // BANCO DE DADOS DA MATRIZ CURRICULAR COMPLETA (1º AO 9º ANO)
     // -------------------------------------------------------------
     const matrizCurricular = {
