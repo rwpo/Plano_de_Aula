@@ -142,7 +142,7 @@
             <p class="text-xs text-slate-500 mb-3">Insira a URL da imagem (ex: link do GitHub RAW ou GitHub Pages) para exibir no topo dos documentos e impressões em PDF.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
               <div class="md:col-span-2">
-                <input type="url" id="cabecalhoUrl" oninput="atualizarPreviewCabecalhoForm()" placeholder="https://raw.githubusercontent.com/usuario/repositorio/main/cabecalho.png" class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all">
+                <input type="url" id="cabecalhoUrl" oninput="tratarEAtualizarPreviewCabecalho()" placeholder="https://raw.githubusercontent.com/usuario/repositorio/main/cabecalho.png" class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all">
               </div>
               <div class="flex items-center justify-center border border-dashed border-slate-300 rounded-lg p-2 bg-white min-h-[50px]">
                 <img id="previewCabecalhoForm" src="" alt="Pré-visualização do Cabeçalho" class="max-h-12 max-w-full object-contain hidden" onerror="tratarErroImagemPreview()">
@@ -156,7 +156,7 @@
             <h3 class="text-sm font-bold uppercase tracking-wider text-brand-600 mb-4 flex items-center gap-2">
               <i class="fas fa-user-graduate"></i> 1. Identificação Geral
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nome do Professor *</label>
                 <input type="text" id="professor" required placeholder="Ex: Prof. Carlos Silva" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
@@ -178,9 +178,23 @@
                 </select>
               </div>
 
-              <div>
-                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Data da Aula *</label>
-                <input type="date" id="dataAula" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+              <!-- SUBSITUIÇÃO DO CAMPO FIXO DE QTD AULAS POR GERENCIADOR DINÂMICO DE DATAS -->
+              <div class="lg:col-span-2">
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-xs font-semibold text-slate-600 uppercase">Datas das Aulas *</label>
+                  <span id="badgeQtdAulasCalculada" class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">
+                    1 aula planejada
+                  </span>
+                </div>
+                
+                <!-- Conteiner Dinâmico de Datas -->
+                <div id="containerDatasAulas" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                  <!-- Inputs renderizados via JS -->
+                </div>
+                
+                <button type="button" onclick="adicionarCampoData()" class="mt-2 text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+                  <i class="fas fa-plus-circle"></i> Adicionar nova data de aula
+                </button>
               </div>
             </div>
             
@@ -377,11 +391,12 @@
 
     <div class="grid grid-cols-2 gap-4 mb-6 text-sm border-b pb-4">
       <div><strong>Professor(a):</strong> <span id="printProfessor">-</span></div>
-      <div><strong>Data da Aula:</strong> <span id="printData">-</span></div>
       <div><strong>Componente Curricular:</strong> <span id="printDisciplina">-</span></div>
       <div><strong>Ano / Etapa:</strong> <span id="printEtapa">-</span></div>
       <div><strong>Turma:</strong> <span id="printTurma">-</span></div>
-      <div><strong>Tema da Aula:</strong> <span id="printTema">-</span></div>
+      <div><strong>Total de Aulas:</strong> <span id="printQuantidadeAulas">-</span></div>
+      <div><strong>Data(s) da(s) Aula(s):</strong> <span id="printData">-</span></div>
+      <div class="col-span-2"><strong>Tema da Aula:</strong> <span id="printTema">-</span></div>
     </div>
 
     <div class="space-y-5 text-sm">
@@ -542,29 +557,14 @@
       }
     };
 
-    // -------------------------------------------------------------
-    // CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE
-    // -------------------------------------------------------------
-    const firebaseConfig = {
-      apiKey: "AIzaSyBaT-6CMyUINhJmzBqe-is6c8KrtY0r1oU",
-      authDomain: "planoaulabncc.firebaseapp.com",
-      projectId: "planoaulabncc",
-      storageBucket: "planoaulabncc.firebasestorage.app",
-      messagingSenderId: "341072016026",
-      appId: "1:341072016026:web:ba69c02b894763591a6523",
-      databaseURL: "https://planoaulabncc-default-rtdb.firebaseio.com"
-    };
-
-    // Inicializa o App Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const planosRef = db.ref('planos_de_aula');
-    const configRef = db.ref('configuracoes/cabecalhoUrl');
+    // URL PADRÃO DO CABEÇALHO DO REPOSITÓRIO DO CAS (Formato RAW correto)
+    const CABECALHO_DEFAULT_URL = "https://raw.githubusercontent.com/rwpo/Plano_de_Aula/main/Cabecalho_CAS.png";
 
     // Estado da aplicação
     let todosOsPlanos = {};
     let modoVisualizacao = 'grid'; // 'grid' ou 'lista'
-    let cabecalhoGlobalUrl = '';
+    let cabecalhoGlobalUrl = CABECALHO_DEFAULT_URL;
+    let listaDatasAulas = []; // Lista de datas selecionadas para o plano atual
 
     // -------------------------------------------------------------
     // EVENTOS E CARREGAMENTO DA PÁGINA
@@ -574,24 +574,100 @@
       carregarConfiguracaoCabecalho();
       escutarPlanosFirebase();
       
-      // Ajustar data atual como padrão no formulário
-      document.getElementById('dataAula').value = new Date().toISOString().split('T')[0];
+      // Inicializar com uma data padrão (hoje)
+      const dataHoje = new Date().toISOString().split('T')[0];
+      inicializarGerenciadorDatas([dataHoje]);
     };
+
+    // -------------------------------------------------------------
+    // GERENCIADOR DINÂMICO DE DATAS E CÁLCULO DE AULAS
+    // -------------------------------------------------------------
+    function inicializarGerenciadorDatas(datasArray) {
+      listaDatasAulas = Array.isArray(datasArray) && datasArray.length > 0 
+        ? [...datasArray] 
+        : [new Date().toISOString().split('T')[0]];
+      renderizarCamposDatas();
+    }
+
+    function adicionarCampoData() {
+      const dataHoje = new Date().toISOString().split('T')[0];
+      listaDatasAulas.push(dataHoje);
+      renderizarCamposDatas();
+    }
+
+    function removerCampoData(index) {
+      if (listaDatasAulas.length <= 1) {
+        mostrarToast("O plano de aula deve conter ao menos 1 data registrada.", "error");
+        return;
+      }
+      listaDatasAulas.splice(index, 1);
+      renderizarCamposDatas();
+    }
+
+    function atualizarValorData(index, valor) {
+      listaDatasAulas[index] = valor;
+    }
+
+    function renderizarCamposDatas() {
+      const container = document.getElementById('containerDatasAulas');
+      container.innerHTML = '';
+
+      listaDatasAulas.forEach((data, idx) => {
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-2";
+        div.innerHTML = `
+          <input type="date" required value="${data}" onchange="atualizarValorData(${idx}, this.value)" class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+          ${listaDatasAulas.length > 1 ? `
+            <button type="button" onclick="removerCampoData(${idx})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors text-xs" title="Remover esta data">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          ` : ''}
+        `;
+        container.appendChild(div);
+      });
+
+      // Atualiza a badge de contagem de aulas
+      const qtd = listaDatasAulas.length;
+      document.getElementById('badgeQtdAulasCalculada').innerText = `${qtd} ${qtd === 1 ? 'aula planejada' : 'aulas planejadas'}`;
+    }
 
     // Carregar e sincronizar URL do cabeçalho institucional
     function carregarConfiguracaoCabecalho() {
+      document.getElementById('cabecalhoUrl').value = CABECALHO_DEFAULT_URL;
+      tratarEAtualizarPreviewCabecalho();
+
       configRef.on('value', (snapshot) => {
         const url = snapshot.val();
         if (url) {
-          cabecalhoGlobalUrl = url;
-          document.getElementById('cabecalhoUrl').value = url;
-          atualizarPreviewCabecalhoForm();
+          cabecalhoGlobalUrl = converterUrlGitHubRaw(url);
+          document.getElementById('cabecalhoUrl').value = cabecalhoGlobalUrl;
+          tratarEAtualizarPreviewCabecalho();
         }
       });
     }
 
-    function atualizarPreviewCabecalhoForm() {
-      const url = document.getElementById('cabecalhoUrl').value.trim();
+    // Utilitário aperfeiçoado para converter links de visualização do GitHub no arquivo da imagem RAW
+    function converterUrlGitHubRaw(url) {
+      if (!url) return '';
+      let urlLimpa = url.trim();
+      
+      // Converte links do repositório no formato web (github.com/usuario/repo/blob/branch/imagem.png)
+      if (urlLimpa.includes('github.com') && urlLimpa.includes('/blob/')) {
+        urlLimpa = urlLimpa.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+      }
+      return urlLimpa;
+    }
+
+    function tratarEAtualizarPreviewCabecalho() {
+      const inputElem = document.getElementById('cabecalhoUrl');
+      let url = inputElem.value.trim();
+      
+      const rawUrl = converterUrlGitHubRaw(url);
+      if (rawUrl !== url) {
+        inputElem.value = rawUrl;
+        url = rawUrl;
+      }
+
       const img = document.getElementById('previewCabecalhoForm');
       const text = document.getElementById('textNoCabecalho');
 
@@ -609,7 +685,7 @@
       const img = document.getElementById('previewCabecalhoForm');
       const text = document.getElementById('textNoCabecalho');
       img.classList.add('hidden');
-      text.innerText = "Erro ao carregar a imagem. Verifique a URL.";
+      text.innerText = "Erro ao carregar imagem do cabeçalho.";
       text.classList.remove('hidden');
     }
 
@@ -711,11 +787,11 @@
       e.preventDefault();
 
       const id = document.getElementById('planoId').value;
-      const cabecalhoInput = document.getElementById('cabecalhoUrl').value.trim();
+      let cabecalhoInput = document.getElementById('cabecalhoUrl').value.trim();
+      cabecalhoInput = converterUrlGitHubRaw(cabecalhoInput);
 
-      // Salva a configuração global do cabeçalho no Firebase se foi preenchida
       if (cabecalhoInput) {
-        configRef.set(cabecalhoInput);
+        configRef.set(cabecalhoInput).catch(err => console.log('Aviso config:', err));
       }
 
       const planoData = {
@@ -723,7 +799,8 @@
         professor: document.getElementById('professor').value,
         disciplina: document.getElementById('disciplina').value,
         etapa: document.getElementById('etapa').value,
-        dataAula: document.getElementById('dataAula').value,
+        datasAulas: listaDatasAulas,
+        quantidadeAulas: listaDatasAulas.length,
         turma: document.getElementById('turma').value,
         tema: document.getElementById('tema').value,
         codigoHabilidade: document.getElementById('codigoHabilidade').value,
@@ -738,33 +815,22 @@
       btn.disabled = true;
       btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Salvando...`;
 
-      if (id) {
-        // Atualizar plano existente
-        planosRef.child(id).update(planoData)
-          .then(() => {
-            mostrarToast("Plano atualizado com sucesso no Firebase!");
-            finalizarSalvar();
-          })
-          .catch((err) => {
-            mostrarToast("Erro ao atualizar o plano.", "error");
-            btn.disabled = false;
-            btn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> Salvar no Firebase`;
-          });
-      } else {
-        // Criar novo plano
-        planoData.criadoEm = new Date().toISOString();
-        const novoRef = planosRef.push();
-        novoRef.set(planoData)
-          .then(() => {
-            mostrarToast("Novo plano cadastrado com sucesso!");
-            finalizarSalvar();
-          })
-          .catch((err) => {
-            mostrarToast("Erro ao salvar no banco.", "error");
-            btn.disabled = false;
-            btn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> Salvar no Firebase`;
-          });
-      }
+      // Promessa do Firebase com fallback de segurança
+      const acaoFirebase = id 
+        ? planosRef.child(id).update(planoData)
+        : (planoData.criadoEm = new Date().toISOString(), planosRef.push().set(planoData));
+
+      acaoFirebase
+        .then(() => {
+          mostrarToast(id ? "Plano atualizado com sucesso!" : "Novo plano salvo com sucesso!");
+          finalizarSalvar();
+        })
+        .catch((err) => {
+          console.error("Erro no Firebase:", err);
+          mostrarToast("Erro ao comunicar com a nuvem do Firebase.", "error");
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> Salvar no Firebase`;
+        });
     }
 
     function finalizarSalvar() {
@@ -795,7 +861,7 @@
 
       document.getElementById('planoId').value = id;
       document.getElementById('cabecalhoUrl').value = plano.cabecalhoUrl || cabecalhoGlobalUrl;
-      atualizarPreviewCabecalhoForm();
+      tratarEAtualizarPreviewCabecalho();
 
       document.getElementById('professor').value = plano.professor || '';
       document.getElementById('disciplina').value = plano.disciplina || 'Matematica';
@@ -803,7 +869,11 @@
       atualizarDisciplinasEEtapas();
       
       document.getElementById('etapa').value = plano.etapa || '';
-      document.getElementById('dataAula').value = plano.dataAula || '';
+      
+      // Carregar array de datas ou adaptar campo legado
+      const datas = Array.isArray(plano.datasAulas) ? plano.datasAulas : [plano.dataAula || new Date().toISOString().split('T')[0]];
+      inicializarGerenciadorDatas(datas);
+
       document.getElementById('turma').value = plano.turma || '';
       document.getElementById('tema').value = plano.tema || '';
       document.getElementById('codigoHabilidade').value = plano.codigoHabilidade || '';
@@ -833,14 +903,21 @@
         PortuguesL2: 'Português L2'
       }[plano.disciplina] || plano.disciplina;
 
-      const cabecalhoHtml = (plano.cabecalhoUrl || cabecalhoGlobalUrl) 
+      const urlCab = converterUrlGitHubRaw(plano.cabecalhoUrl || cabecalhoGlobalUrl);
+      const cabecalhoHtml = urlCab 
         ? `<div class="w-full text-center mb-4 pb-3 border-b border-slate-100">
-             <img src="${plano.cabecalhoUrl || cabecalhoGlobalUrl}" alt="Cabeçalho da Escola" class="max-h-24 max-w-full mx-auto object-contain">
+             <img src="${urlCab}" alt="Cabeçalho da Escola" class="max-h-24 max-w-full mx-auto object-contain">
            </div>`
         : '';
 
       document.getElementById('modalBadgeDisc').innerText = nomeDisc;
       document.getElementById('modalEtapa').innerText = `${plano.etapa} - Turma: ${plano.turma || 'Não informada'}`;
+
+      const datasFormatadas = Array.isArray(plano.datasAulas) 
+        ? plano.datasAulas.map(formatarData).join(', ')
+        : formatarData(plano.dataAula);
+
+      const totalAulas = plano.quantidadeAulas || (Array.isArray(plano.datasAulas) ? plano.datasAulas.length : 1);
 
       conteudo.innerHTML = `
         ${cabecalhoHtml}
@@ -848,8 +925,9 @@
           <h2 class="text-xl font-bold text-slate-800">${plano.tema}</h2>
           <p class="text-xs text-slate-500 mt-1">
             <strong>Professor:</strong> ${plano.professor} &bull; 
-            <strong>Data:</strong> ${formatarData(plano.dataAula)} &bull; 
-            <strong>Código BNCC/Matriz:</strong> <span class="font-mono font-bold">${plano.codigoHabilidade}</span>
+            <strong>Total de Aulas:</strong> <span class="text-brand-600 font-bold">${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'}</span> &bull; 
+            <strong>Data(s):</strong> ${datasFormatadas} &bull; 
+            <strong>Código:</strong> <span class="font-mono font-bold">${plano.codigoHabilidade}</span>
           </p>
         </div>
 
@@ -888,7 +966,7 @@
     }
 
     function prepararEImprimir(plano) {
-      const urlCabecalho = plano.cabecalhoUrl || cabecalhoGlobalUrl;
+      const urlCabecalho = converterUrlGitHubRaw(plano.cabecalhoUrl || cabecalhoGlobalUrl);
       const cabecalhoContainer = document.getElementById('printCabecalhoContainer');
       const cabecalhoImg = document.getElementById('printCabecalhoImg');
 
@@ -899,10 +977,17 @@
         cabecalhoContainer.classList.add('hidden');
       }
 
+      const datasFormatadas = Array.isArray(plano.datasAulas) 
+        ? plano.datasAulas.map(formatarData).join(', ')
+        : formatarData(plano.dataAula);
+
+      const totalAulas = plano.quantidadeAulas || (Array.isArray(plano.datasAulas) ? plano.datasAulas.length : 1);
+
       document.getElementById('printProfessor').innerText = plano.professor;
-      document.getElementById('printData').innerText = formatarData(plano.dataAula);
+      document.getElementById('printData').innerText = datasFormatadas;
       document.getElementById('printDisciplina').innerText = plano.disciplina;
       document.getElementById('printEtapa').innerText = plano.etapa;
+      document.getElementById('printQuantidadeAulas').innerText = `${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'}`;
       document.getElementById('printTurma').innerText = plano.turma || '-';
       document.getElementById('printTema').innerText = plano.tema;
       document.getElementById('printCodigo').innerText = plano.codigoHabilidade;
@@ -1007,6 +1092,11 @@
           PortuguesL2: 'Português L2'
         }[plano.disciplina] || plano.disciplina;
 
+        const totalAulas = plano.quantidadeAulas || (Array.isArray(plano.datasAulas) ? plano.datasAulas.length : 1);
+        const dataExibicao = Array.isArray(plano.datasAulas) && plano.datasAulas.length > 0 
+          ? formatarData(plano.datasAulas[0]) + (plano.datasAulas.length > 1 ? ` (+${plano.datasAulas.length - 1})` : '')
+          : formatarData(plano.dataAula);
+
         const card = document.createElement('div');
         
         if (modoVisualizacao === 'grid') {
@@ -1018,11 +1108,16 @@
                 <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${plano.codigoHabilidade || 'N/A'}</span>
               </div>
               <h3 class="font-bold text-slate-800 text-base mb-1 line-clamp-2">${plano.tema}</h3>
-              <p class="text-xs text-slate-500 mb-4"><i class="fas fa-user-circle mr-1"></i>${plano.professor} &bull; ${plano.etapa}</p>
+              <p class="text-xs text-slate-500 mb-2"><i class="fas fa-user-circle mr-1"></i>${plano.professor} &bull; ${plano.etapa}</p>
+              <div class="mb-4">
+                <span class="inline-block text-[11px] font-medium bg-cyan-50 text-cyan-700 px-2 py-0.5 rounded border border-cyan-100">
+                  <i class="fas fa-layer-group mr-1"></i>${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'}
+                </span>
+              </div>
               <p class="text-xs text-slate-600 line-clamp-3 bg-slate-50 p-2.5 rounded-lg mb-4 border border-slate-100">${plano.descricaoHabilidade}</p>
             </div>
             <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs">
-              <span class="text-slate-400"><i class="far fa-calendar mr-1"></i>${formatarData(plano.dataAula)}</span>
+              <span class="text-slate-400"><i class="far fa-calendar mr-1"></i>${dataExibicao}</span>
               <div class="flex gap-2">
                 <button onclick="abrirModalDetalhes('${plano.id}')" class="p-2 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors" title="Visualizar / Imprimir">
                   <i class="fas fa-eye"></i>
@@ -1043,7 +1138,7 @@
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs px-2 py-0.5 rounded font-semibold bg-brand-50 text-brand-700">${nomeDisc}</span>
                 <span class="text-xs font-mono font-bold text-slate-500">${plano.codigoHabilidade || 'N/A'}</span>
-                <span class="text-xs text-slate-400">&bull; ${formatarData(plano.dataAula)}</span>
+                <span class="text-xs text-slate-400">&bull; ${dataExibicao} (${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'})</span>
               </div>
               <h3 class="font-bold text-slate-800 text-sm">${plano.tema}</h3>
               <p class="text-xs text-slate-500">Prof: ${plano.professor} (${plano.etapa})</p>
@@ -1070,11 +1165,13 @@
       document.getElementById('planoId').value = '';
       document.getElementById('formPlano').reset();
       document.getElementById('formTitle').innerText = "Criar Novo Plano de Aula";
-      document.getElementById('dataAula').value = new Date().toISOString().split('T')[0];
       
+      const dataHoje = new Date().toISOString().split('T')[0];
+      inicializarGerenciadorDatas([dataHoje]);
+
       if (cabecalhoGlobalUrl) {
         document.getElementById('cabecalhoUrl').value = cabecalhoGlobalUrl;
-        atualizarPreviewCabecalhoForm();
+        tratarEAtualizarPreviewCabecalho();
       }
       
       atualizarDisciplinasEEtapas();
