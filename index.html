@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Planos de Aula BNCC</title>
+    <title>Gerenciador de Planos de Aula BNCC v1.0</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Inter & FontAwesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK (Compat) -->
+    <!-- Firebase SDK (Compat v9) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <style>
@@ -17,10 +17,12 @@
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; color: black !important; }
+            #modalVisualizacao { position: static !important; background: transparent !important; p: 0 !important; }
+            #modalVisualizacao > div { max-width: 100% !important; shadow: none !important; p: 0 !important; border: none !important; }
         }
     </style>
     <script>
-      // Normaliza links do GitHub para imagens diretas (raw)
+      // Normaliza links de imagem do GitHub
       window.normalizarUrlImagem = function(url) {
         if (!url) return '';
         let cleanUrl = url.trim();
@@ -37,7 +39,7 @@
         const text = document.getElementById('textNoCabecalho');
         if (img) img.classList.add('hidden');
         if (text) {
-          text.textContent = "Erro ao carregar imagem. Verifique o link.";
+          text.textContent = "Erro ao carregar imagem. Verifique a URL inserida.";
           text.className = "text-xs text-rose-500 font-semibold";
         }
       };
@@ -57,7 +59,7 @@
         if (!url) {
           if (img) img.classList.add('hidden');
           if (text) {
-            text.textContent = "Sem imagem de cabeçalho";
+            text.textContent = "Insira a URL do cabeçalho acima para visualizar";
             text.className = "text-xs text-slate-400";
           }
           return;
@@ -69,6 +71,23 @@
           text.textContent = "";
         }
       };
+
+      function alertPersonalizado(mensagem) {
+        const modal = document.createElement('div');
+        modal.className = "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print";
+        modal.innerHTML = `
+          <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-xl">
+              <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <p class="text-sm text-slate-700 font-medium">${mensagem}</p>
+            <button onclick="this.closest('.fixed').remove()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl w-full transition">
+              Entendido
+            </button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
     </script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
@@ -81,24 +100,20 @@
                     <i class="fa-solid fa-graduation-cap text-2xl text-amber-300"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">Gerenciador de Planos de Aula BNCC</h1>
-                    <p class="text-xs text-indigo-200">Matemática, Libras & Português L2 • Sincronizado com Firebase</p>
+                    <h1 class="text-xl font-bold tracking-tight">Gerenciador de Planos de Aula BNCC <span class="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full uppercase ml-1">v1.0</span></h1>
+                    <p class="text-xs text-indigo-200">Matemática (1º ao 9º Ano), Libras & Português L2 • Sincronizado no Firebase</p>
                 </div>
             </div>
             
             <div class="flex flex-wrap items-center gap-3">
                 <div id="statusFirebaseBadge" class="bg-indigo-800/80 border border-indigo-600 text-xs px-3 py-1.5 rounded-full flex items-center space-x-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" id="dotStatusFirebase"></span>
-                    <span id="txtStatusFirebase" class="font-medium text-indigo-100">Verificando Firebase...</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400" id="dotStatusFirebase"></span>
+                    <span id="txtStatusFirebase" class="font-medium text-indigo-100">Firebase Conectado</span>
                 </div>
                 
                 <button id="btnSubirMatriz" onclick="sincronizarMatrizComFirebase()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-2">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                     <span id="txtBtnSubirMatriz">Subir Matriz Curricular</span>
-                </button>
-
-                <button onclick="alternarVisao('grid')" class="bg-indigo-600 hover:bg-indigo-800 text-white p-2 rounded-lg text-sm transition" title="Ver Planos Salvos">
-                    <i class="fa-solid fa-folder-open"></i>
                 </button>
             </div>
         </div>
@@ -112,7 +127,7 @@
             <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
                 <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
                     <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
-                    <span>Novo Plano de Aula</span>
+                    <span>Criar Plano de Aula</span>
                 </h2>
                 <button onclick="limparFormulario()" class="text-xs text-slate-500 hover:text-rose-600 transition flex items-center space-x-1">
                     <i class="fa-solid fa-rotate-right"></i>
@@ -120,7 +135,7 @@
                 </button>
             </div>
 
-            <form id="formPlanoAula" onsubmit="salvarPlano(event)" class="space-y-5">
+            <form id="formPlanoAula" onsubmit="return salvarPlano(event)" class="space-y-5">
                 <!-- Cabeçalho Institucional / Imagem -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
@@ -158,7 +173,7 @@
                     </div>
                 </div>
 
-                <!-- Seleção de Habilidade BNCC (Dividida em 2 colunas: Código limpo + Caixa de leitura da descrição completa) -->
+                <!-- Seleção de Habilidade BNCC -->
                 <div class="space-y-2 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                     <label class="block text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1">
                         <i class="fa-solid fa-bullseye text-indigo-600 mr-1"></i> Selecionar Habilidade BNCC / Currículo
@@ -310,16 +325,14 @@
         firebase.initializeApp(firebaseConfig);
       }
       const db = firebase.database();
-
-      // Otimização: Manter conexão ativa instantânea
       firebase.database().goOnline();
 
-      // Variáveis Globais de Estado
+      // Estado Global
       let habilidadesAdicionadas = [];
       let planosSalvos = {};
       let datasBlocoAulas = [];
 
-      // Matriz Curricular Completa BNCC (Matemática 1º ao 9º Ano, Libras e Português L2)
+      // Base Curricular Completa de Matemática (1º ao 9º Ano), Libras e Português L2
       const baseMatrizCurricular = {
         "Matematica": {
           "1º Ano": [
@@ -484,7 +497,7 @@
             { codigo: "EF06MA23", descricao: "Construir algoritmo para resolver situações passo a passo (dobraduras ou deslocamentos)." },
             { codigo: "EF06MA24", descricao: "Resolver e elaborar problemas envolvendo grandezas de comprimento, massa, tempo, temperatura, área e volume." },
             { codigo: "EF06MA25", descricao: "Reconhecer a abertura do ângulo como grandeza associada a figuras geométricas." },
-            { codigo: "EF06MA26", descricao: "Resolver problemas envolvendo noção de ângulo em diferentes contextos (ângulo de visión)." },
+            { codigo: "EF06MA26", descricao: "Resolver problemas envolvendo noção de ângulo em diferentes contextos (ângulo de visão)." },
             { codigo: "EF06MA27", descricao: "Determinar medidas da abertura de ângulos por meio de transferidor." },
             { codigo: "EF06MA28", descricao: "Interpretar, descrever e desenhar plantas baixas simples de residências." },
             { codigo: "EF06MA29", descricao: "Analisar mudanças que ocorrem no perímetro e na área de um quadrado ao ampliar seus lados." },
@@ -614,7 +627,7 @@
         }
       };
 
-      // Funções de Inicialização e Interface
+      // Inicialização da Página
       window.onload = function() {
         atualizarEtapas();
         inicializarBlocoDatas();
@@ -730,7 +743,7 @@
         });
       }
 
-      // Gestão de Múltiplas Datas (Bloco de Aulas)
+      // Bloco de Aulas (Datas)
       function inicializarBlocoDatas() {
         datasBlocoAulas = [new Date().toISOString().split('T')[0]];
         renderizarInputsDatas();
@@ -785,28 +798,15 @@
         atualizarHabilidadesDisponiveis();
       }
 
-      // Operações Rápidas e Dinâmicas com Firebase
+      // Verificação e Sincronização Firebase
       function verificarStatusBancoFirebase() {
         const badgeDot = document.getElementById('dotStatusFirebase');
         const badgeTxt = document.getElementById('txtStatusFirebase');
 
-        // Status inicial imediato
         if (badgeTxt) {
           badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-          badgeTxt.textContent = "Conectado (Pronto para uso)";
+          badgeTxt.textContent = "Firebase Conectado";
         }
-
-        // Consulta assíncrona leve em segundo plano sem bloquear a interface
-        db.ref('matrizCurricularBNCC/Matematica').limitToFirst(1).once('value')
-          .then(snapshot => {
-            if (snapshot.exists()) {
-              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-              badgeTxt.textContent = `Firebase Conectado (Matriz Presente)`;
-            }
-          })
-          .catch(() => {
-            // Em caso de offline, permanece pronto no modo local
-          });
       }
 
       function sincronizarMatrizComFirebase() {
@@ -816,26 +816,21 @@
         
         if (!btnText) return;
 
-        // Feedback imediato no clique
-        btnText.textContent = "Verificando matriz no Firebase...";
+        btnText.textContent = "Verificando Firebase...";
         
-        // Verifica a presença de dados de forma direta
         db.ref('matrizCurricularBNCC/Matematica/1º Ano').once('value')
           .then(snapshot => {
             const data = snapshot.val();
             
-            // Se já existirem dados cadastrados (mais de 15 habilidades no 1º ano como amostra)
             if (data && Array.isArray(data) && data.length >= 15) {
               btnText.textContent = "Subir Matriz Curricular";
-              badgeTxt.textContent = `Matriz Já Atualizada (247 Habilidades)`;
+              badgeTxt.textContent = `Matriz Atualizada (247 Habilidades)`;
               badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
               alertPersonalizado("A matriz de Matemática já está cadastrada no Firebase! Nenhuma ação necessária.");
               return;
             }
 
-            // Caso não esteja completa, realiza o upload em lote rápido
-            let totalMatematica = 247;
-            btnText.textContent = `Enviando ${totalMatematica} Habilidades...`;
+            btnText.textContent = `Enviando 247 Habilidades...`;
             badgeTxt.textContent = `Sincronizando no Firebase...`;
             badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
 
@@ -851,9 +846,7 @@
                 alertPersonalizado("Erro ao salvar matriz: " + err.message);
               });
           })
-          .catch((error) => {
-            btnText.textContent = "Subir Matriz Curricular";
-            // Se houver erro de leitura, realiza o envio direto
+          .catch(() => {
             db.ref('matrizCurricularBNCC').set(baseMatrizCurricular)
               .then(() => {
                 alertPersonalizado("Matriz enviada com sucesso!");
@@ -910,18 +903,18 @@
           criadoEm: new Date().toISOString()
         };
 
-        // Salva localmente de forma imediata para atualizar a tela sem esperar a rede
+        // Salva instantaneamente em memória
         planosSalvos[idPlano] = plano;
         renderizarListaPlanos();
 
-        // Envia para o Firebase em segundo plano
+        // Envia para o Firebase
         db.ref('planosDeAula/' + idPlano).set(plano)
           .then(() => {
-            alertPersonalizado("Plano de Aula salvo com sucesso!");
+            alertPersonalizado("Plano de Aula salvo com sucesso no Firebase!");
             limparFormulario();
           })
           .catch((err) => {
-            alertPersonalizado("Plano salvo na memória da sessão! (Aviso do Firebase: " + err.message + ")");
+            alertPersonalizado("Plano salvo localmente! (Firebase alertou: " + err.message + ")");
             limparFormulario();
           });
 
@@ -956,7 +949,6 @@
         }
 
         container.innerHTML = '';
-        // Ordena dos mais recentes para os mais antigos
         chaves.sort((a, b) => (planosSalvos[b].criadoEm || '').localeCompare(planosSalvos[a].criadoEm || ''))
               .forEach(key => {
                 const p = planosSalvos[key];
@@ -1023,13 +1015,13 @@
             <div class="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
               <span><strong>Componente:</strong> ${p.disciplina}</span>
               <span><strong>Etapa/Ano:</strong> ${p.etapa}</span>
-              <span><strong>Datas/Cronograma:</strong> ${datasStr}</span>
+              <span><strong>Cronograma de Aulas:</strong> ${datasStr}</span>
             </div>
           </div>
 
           <div class="space-y-4 text-xs">
             <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
-              <h4 class="font-bold text-indigo-900 uppercase text-[11px] tracking-wider mb-2">Habilidades BNCC / Matriz</h4>
+              <h4 class="font-bold text-indigo-900 uppercase text-[11px] tracking-wider mb-2">Habilidades BNCC / Matriz Curricular</h4>
               ${habilidadesHtml}
             </div>
 
@@ -1050,7 +1042,7 @@
             ${p.materiais ? `
               <div>
                 <h4 class="font-bold text-slate-800 uppercase text-[11px] tracking-wider mb-1"><i class="fa-solid fa-toolbox text-indigo-600 mr-1"></i> Materiais Necessários para a Aula</h4>
-                <p class="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200">${p.materiais}</p>
+                <p class="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 font-medium">${p.materiais}</p>
               </div>
             ` : ''}
 
@@ -1079,4 +1071,18 @@
 
         modal.classList.remove('hidden');
       }
-<!-- ... existing code -->
+
+      function fecharModalVisualizacao() {
+        document.getElementById('modalVisualizacao').classList.add('hidden');
+      }
+
+      function excluirPlano(id) {
+        if (confirm("Tem certeza que deseja excluir este plano de aula?")) {
+          delete planosSalvos[id];
+          renderizarListaPlanos();
+          db.ref('planosDeAula/' + id).remove();
+        }
+      }
+    </script>
+</body>
+</html>
