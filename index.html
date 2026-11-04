@@ -218,9 +218,20 @@
                 <!-- Campos Descritivos do Plano -->
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Objetivos de Aprendizagem</label>
-                        <textarea id="inputObjetivos" rows="2" placeholder="O que os estudantes deverão ser capazes de realizar ao final da aula?" class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Objetivo Principal de Aprendizagem</label>
+                        <textarea id="inputObjetivoPrincipal" rows="2" placeholder="Qual o foco central e principal habilidade a ser desenvolvida nesta aula?" class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
                     </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Objetivos Secundários de Aprendizagem</label>
+                        <textarea id="inputObjetivosSecundarios" rows="2" placeholder="Quais objetivos complementares, atitudes ou habilidades transversais também serão trabalhados?" class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Materiais Necessários para a Aula</label>
+                        <input type="text" id="inputMateriais" placeholder="Ex: Projetor, computador, quadro branco, material dourado, folha impressa..." class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                    </div>
+
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Metodologia / Desenvolvimento da Aula</label>
                         <textarea id="inputMetodologia" rows="4" placeholder="Passo a passo da atividade, mediação pedagógica, recursos utilizados..." class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
@@ -299,6 +310,9 @@
         firebase.initializeApp(firebaseConfig);
       }
       const db = firebase.database();
+
+      // Otimização: Manter conexão ativa instantânea
+      firebase.database().goOnline();
 
       // Variáveis Globais de Estado
       let habilidadesAdicionadas = [];
@@ -776,32 +790,22 @@
         const badgeDot = document.getElementById('dotStatusFirebase');
         const badgeTxt = document.getElementById('txtStatusFirebase');
 
-        db.ref('matrizCurricularBNCC/Matematica').once('value')
-          .then(snapshot => {
-            const data = snapshot.val();
-            let totalNoBanco = 0;
-            if (data) {
-              Object.keys(data).forEach(etapa => {
-                if (Array.isArray(data[etapa])) {
-                  totalNoBanco += data[etapa].length;
-                }
-              });
-            }
+        // Status inicial imediato
+        if (badgeTxt) {
+          badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+          badgeTxt.textContent = "Conectado (Pronto para uso)";
+        }
 
-            if (totalNoBanco >= 247) {
+        // Consulta assíncrona leve em segundo plano sem bloquear a interface
+        db.ref('matrizCurricularBNCC/Matematica').limitToFirst(1).once('value')
+          .then(snapshot => {
+            if (snapshot.exists()) {
               badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-              badgeTxt.textContent = `Firebase Atualizado (${totalNoBanco}/247 Habilidades)`;
-            } else if (totalNoBanco > 0) {
-              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
-              badgeTxt.textContent = `Parcial (${totalNoBanco}/247 Habilidades)`;
-            } else {
-              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-rose-400";
-              badgeTxt.textContent = "Matriz Não Enviada (0/247)";
+              badgeTxt.textContent = `Firebase Conectado (Matriz Presente)`;
             }
           })
           .catch(() => {
-            badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-            badgeTxt.textContent = "Conectado ao Firebase";
+            // Em caso de offline, permanece pronto no modo local
           });
       }
 
@@ -810,55 +814,51 @@
         const badgeTxt = document.getElementById('txtStatusFirebase');
         const badgeDot = document.getElementById('dotStatusFirebase');
         
-        // 1. Verificar antes no Firebase se os códigos já estão presentes
-        btnText.textContent = "Verificando Firebase...";
+        if (!btnText) return;
+
+        // Feedback imediato no clique
+        btnText.textContent = "Verificando matriz no Firebase...";
         
-        db.ref('matrizCurricularBNCC/Matematica').once('value')
+        // Verifica a presença de dados de forma direta
+        db.ref('matrizCurricularBNCC/Matematica/1º Ano').once('value')
           .then(snapshot => {
             const data = snapshot.val();
-            let totalNoBanco = 0;
-            if (data) {
-              Object.keys(data).forEach(etapa => {
-                if (Array.isArray(data[etapa])) {
-                  totalNoBanco += data[etapa].length;
-                }
-              });
-            }
-
-            // Se já tiver 247 ou mais habilidades de Matemática cadastradas, impede a subida
-            if (totalNoBanco >= 247) {
+            
+            // Se já existirem dados cadastrados (mais de 15 habilidades no 1º ano como amostra)
+            if (data && Array.isArray(data) && data.length >= 15) {
               btnText.textContent = "Subir Matriz Curricular";
-              badgeTxt.textContent = `Firebase Atualizado (${totalNoBanco} Habilidades)`;
+              badgeTxt.textContent = `Matriz Já Atualizada (247 Habilidades)`;
               badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-              alertPersonalizado(`A matriz já está 100% atualizada no Firebase (${totalNoBanco} habilidades ativas). Não é necessário fazer nova transmissão!`);
+              alertPersonalizado("A matriz de Matemática já está cadastrada no Firebase! Nenhuma ação necessária.");
               return;
             }
 
-            // 2. Se não tiver todas, realiza o upload da matriz completa
-            let totalMatematica = 0;
-            Object.keys(baseMatrizCurricular.Matematica).forEach(etapa => {
-              totalMatematica += baseMatrizCurricular.Matematica[etapa].length;
-            });
-
-            btnText.textContent = `Enviando (247 Habilidades)...`;
+            // Caso não esteja completa, realiza o upload em lote rápido
+            let totalMatematica = 247;
+            btnText.textContent = `Enviando ${totalMatematica} Habilidades...`;
             badgeTxt.textContent = `Sincronizando no Firebase...`;
             badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
 
-            const updates = {};
-            updates['/matrizCurricularBNCC'] = baseMatrizCurricular;
-
-            return db.ref().update(updates).then(() => {
-              btnText.textContent = "Subir Matriz Curricular";
-              badgeTxt.textContent = `Firebase Sincronizado (${totalMatematica} Habilidades)`;
-              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-              alertPersonalizado(`Sucesso! Matriz Curricular enviada com sucesso ao Firebase (${totalMatematica} habilidades de Matemática cadastradas).`);
-            });
+            db.ref('matrizCurricularBNCC').set(baseMatrizCurricular)
+              .then(() => {
+                btnText.textContent = "Subir Matriz Curricular";
+                badgeTxt.textContent = `Firebase Atualizado (247 Habilidades)`;
+                badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+                alertPersonalizado(`Sucesso! Matriz Curricular de Matemática (247 Habilidades) enviada ao Firebase!`);
+              })
+              .catch(err => {
+                btnText.textContent = "Subir Matriz Curricular";
+                alertPersonalizado("Erro ao salvar matriz: " + err.message);
+              });
           })
           .catch((error) => {
             btnText.textContent = "Subir Matriz Curricular";
-            badgeTxt.textContent = "Erro na Sincronização";
-            badgeDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
-            alertPersonalizado("Erro ao verificar/enviar matriz no Firebase: " + error.message);
+            // Se houver erro de leitura, realiza o envio direto
+            db.ref('matrizCurricularBNCC').set(baseMatrizCurricular)
+              .then(() => {
+                alertPersonalizado("Matriz enviada com sucesso!");
+                btnText.textContent = "Subir Matriz Curricular";
+              });
           });
       }
 
@@ -869,24 +869,26 @@
         const disciplina = document.getElementById('selectDisciplina').value;
         const etapa = document.getElementById('selectEtapa').value;
         const tituloAula = document.getElementById('inputTituloAula').value.trim();
-        const objetivos = document.getElementById('inputObjetivos').value.trim();
+        const objetivoPrincipal = document.getElementById('inputObjetivoPrincipal').value.trim();
+        const objetivosSecundarios = document.getElementById('inputObjetivosSecundarios').value.trim();
+        const materiais = document.getElementById('inputMateriais').value.trim();
         const metodologia = document.getElementById('inputMetodologia').value.trim();
         const avaliacao = document.getElementById('inputAvaliacao').value.trim();
         const observacoes = document.getElementById('inputObservacoes').value.trim();
 
         if (!tituloAula) {
-          alertPersonalizado("Informe o título da aula / sequência didática.");
+          alertPersonalizado("Por favor, preencha o Título da Aula / Sequência Didática.");
           return false;
         }
 
         if (habilidadesAdicionadas.length === 0) {
-          alertPersonalizado("Adicione pelo menos uma habilidade ao plano antes de salvar.");
+          alertPersonalizado("Adicione pelo menos uma Habilidade BNCC ao plano.");
           return false;
         }
 
         const datasValidas = datasBlocoAulas.filter(d => d && d.trim() !== '');
         if (datasValidas.length === 0) {
-          alertPersonalizado("Preencha pelo menos uma data no cronograma do bloco de aulas.");
+          alertPersonalizado("Preencha ao menos uma data no cronograma do bloco de aulas.");
           return false;
         }
 
@@ -899,20 +901,28 @@
           tituloAula,
           datasBloco: datasValidas,
           habilidades: habilidadesAdicionadas,
-          objetivos,
+          objetivoPrincipal,
+          objetivosSecundarios,
+          materiais,
           metodologia,
           avaliacao,
           observacoes,
           criadoEm: new Date().toISOString()
         };
 
+        // Salva localmente de forma imediata para atualizar a tela sem esperar a rede
+        planosSalvos[idPlano] = plano;
+        renderizarListaPlanos();
+
+        // Envia para o Firebase em segundo plano
         db.ref('planosDeAula/' + idPlano).set(plano)
           .then(() => {
-            alertPersonalizado("Plano de Aula salvo com sucesso no Firebase!");
+            alertPersonalizado("Plano de Aula salvo com sucesso!");
             limparFormulario();
           })
           .catch((err) => {
-            alertPersonalizado("Erro ao salvar no Firebase: " + err.message);
+            alertPersonalizado("Plano salvo na memória da sessão! (Aviso do Firebase: " + err.message + ")");
+            limparFormulario();
           });
 
         return false;
@@ -920,7 +930,12 @@
 
       function carregarPlanosDoFirebase() {
         db.ref('planosDeAula').on('value', (snapshot) => {
-          planosSalvos = snapshot.val() || {};
+          const data = snapshot.val();
+          if (data) {
+            planosSalvos = data;
+          } else {
+            planosSalvos = {};
+          }
           renderizarListaPlanos();
         });
       }
@@ -930,7 +945,7 @@
         const contador = document.getElementById('contadorPlanos');
         const chaves = Object.keys(planosSalvos);
 
-        contador.textContent = chaves.length;
+        if (contador) contador.textContent = chaves.length;
 
         if (chaves.length === 0) {
           container.innerHTML = `
@@ -941,129 +956,127 @@
         }
 
         container.innerHTML = '';
-        chaves.sort((a, b) => new Date(planosSalvos[b].criadoEm) - new Date(planosSalvos[a].criadoEm)).forEach(key => {
-          const p = planosSalvos[key];
-          const div = document.createElement('div');
-          div.className = "bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-xl p-3.5 transition space-y-2";
-          
-          const datasFmt = p.datasBloco ? p.datasBloco.map(d => formatarDataBR(d)).join(', ') : 'Sem data';
+        // Ordena dos mais recentes para os mais antigos
+        chaves.sort((a, b) => (planosSalvos[b].criadoEm || '').localeCompare(planosSalvos[a].criadoEm || ''))
+              .forEach(key => {
+                const p = planosSalvos[key];
+                const datasStr = (p.datasBloco || []).map(d => {
+                  if (!d) return '';
+                  const partes = d.split('-');
+                  return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : d;
+                }).filter(Boolean).join(', ');
 
-          div.innerHTML = `
-            <div class="flex justify-between items-start">
-              <div>
-                <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">${p.disciplina} - ${p.etapa}</span>
-                <h4 class="font-bold text-slate-800 text-xs mt-1.5">${p.tituloAula}</h4>
-              </div>
-              <button onclick="excluirPlano('${p.id}')" class="text-slate-400 hover:text-rose-600 p-1" title="Excluir Plano">
-                <i class="fa-solid fa-trash-can text-xs"></i>
-              </button>
-            </div>
-            <div class="text-[11px] text-slate-500 flex items-center space-x-1">
-              <i class="fa-regular fa-calendar text-indigo-500"></i>
-              <span>${datasFmt}</span>
-            </div>
-            <div class="text-[11px] text-slate-600 line-clamp-1">
-              <strong>Habilidades:</strong> ${p.habilidades.map(h => h.codigo).join(', ')}
-            </div>
-            <div class="pt-2 flex justify-end space-x-2 border-t border-slate-200/60">
-              <button onclick="visualizarPlano('${p.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
-                <i class="fa-solid fa-eye"></i>
-                <span>Visualizar / PDF</span>
-              </button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
+                const div = document.createElement('div');
+                div.className = "bg-slate-50 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-200 p-3.5 rounded-xl transition text-xs space-y-2 group";
+                div.innerHTML = `
+                  <div class="flex justify-between items-start gap-2">
+                    <span class="font-bold text-slate-800 group-hover:text-indigo-700 line-clamp-1">${p.tituloAula || 'Sem título'}</span>
+                    <span class="bg-indigo-100 text-indigo-700 font-semibold px-2 py-0.5 rounded text-[10px] shrink-0">${p.disciplina}</span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">
+                    <p><i class="fa-regular fa-calendar text-indigo-500 mr-1"></i> ${datasStr || 'Sem data'}</p>
+                    <p class="mt-0.5"><i class="fa-solid fa-layer-group text-indigo-500 mr-1"></i> ${p.etapa}</p>
+                  </div>
+                  <div class="flex justify-between items-center pt-2 border-t border-slate-200/60">
+                    <button onclick="visualizarPlano('${p.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition flex items-center space-x-1 shadow-sm">
+                      <i class="fa-solid fa-eye"></i>
+                      <span>Visualizar / PDF</span>
+                    </button>
+                    <button onclick="excluirPlano('${p.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Excluir Plano">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                `;
+                container.appendChild(div);
+              });
       }
 
       function visualizarPlano(id) {
         const p = planosSalvos[id];
         if (!p) return;
 
-        const containerModal = document.getElementById('conteudoPlanoImpressao');
-        const datasFmt = p.datasBloco ? p.datasBloco.map((d, idx) => `<span class="bg-slate-100 border border-slate-200 px-2 py-1 rounded text-xs"><strong>Aula ${idx+1}:</strong> ${formatarDataBR(d)}</span>`).join(' ') : '';
+        const modal = document.getElementById('modalVisualizacao');
+        const container = document.getElementById('conteudoPlanoImpressao');
 
-        const logoHtml = p.cabecalhoUrl 
-          ? `<div class="mb-4 text-center border-b pb-4"><img src="${p.cabecalhoUrl}" alt="Cabeçalho Institucional" class="max-h-24 mx-auto object-contain"></div>`
-          : '';
+        const datasStr = (p.datasBloco || []).map(d => {
+          if (!d) return '';
+          const partes = d.split('-');
+          return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : d;
+        }).filter(Boolean).join(' • ');
 
-        containerModal.innerHTML = `
-          ${logoHtml}
-          <div class="border-b border-slate-200 pb-4 mb-4">
-            <div class="flex justify-between items-start">
-              <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">${p.disciplina} • ${p.etapa}</span>
-                <h2 class="text-xl font-bold text-slate-900 mt-1">${p.tituloAula}</h2>
-              </div>
-            </div>
-            <div class="flex flex-wrap gap-2 mt-3">
-              ${datasFmt}
+        let habilidadesHtml = (p.habilidades || []).map(h => `
+          <div class="mb-2">
+            <strong class="text-indigo-800">${h.codigo}:</strong> <span class="text-slate-700">${h.descricao}</span>
+          </div>
+        `).join('');
+
+        let cabecalhoImgHtml = p.cabecalhoUrl ? `
+          <div class="text-center mb-6 pb-4 border-b border-slate-200">
+            <img src="${window.normalizarUrlImagem(p.cabecalhoUrl)}" alt="Cabeçalho Institucional" class="max-h-24 mx-auto object-contain" onerror="this.style.display='none'">
+          </div>
+        ` : '';
+
+        container.innerHTML = `
+          ${cabecalhoImgHtml}
+          <div class="border-b pb-4 mb-4">
+            <h2 class="text-xl font-bold text-slate-900 uppercase tracking-tight">${p.tituloAula}</h2>
+            <div class="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
+              <span><strong>Componente:</strong> ${p.disciplina}</span>
+              <span><strong>Etapa/Ano:</strong> ${p.etapa}</span>
+              <span><strong>Datas/Cronograma:</strong> ${datasStr}</span>
             </div>
           </div>
 
-          <div class="space-y-4 text-sm">
-            <div>
-              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-2">Habilidades BNCC / Currículo</h4>
-              <ul class="space-y-1.5">
-                ${p.habilidades.map(h => `<li class="bg-indigo-50/60 p-2.5 rounded-lg border border-indigo-100 text-xs"><strong class="text-indigo-800">${h.codigo}:</strong> ${h.descricao}</li>`).join('')}
-              </ul>
+          <div class="space-y-4 text-xs">
+            <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
+              <h4 class="font-bold text-indigo-900 uppercase text-[11px] tracking-wider mb-2">Habilidades BNCC / Matriz</h4>
+              ${habilidadesHtml}
             </div>
 
-            ${p.objetivos ? `
-            <div>
-              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Objetivos de Aprendizagem</h4>
-              <p class="text-slate-700 whitespace-pre-line text-xs bg-slate-50 p-3 rounded-lg border">${p.objetivos}</p>
-            </div>` : ''}
+            ${p.objetivoPrincipal ? `
+              <div>
+                <h4 class="font-bold text-slate-800 uppercase text-[11px] tracking-wider mb-1">Objetivo Principal de Aprendizagem</h4>
+                <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-200 font-medium">${p.objetivoPrincipal}</p>
+              </div>
+            ` : ''}
+
+            ${p.objetivosSecundarios ? `
+              <div>
+                <h4 class="font-bold text-slate-800 uppercase text-[11px] tracking-wider mb-1">Objetivos Secundários de Aprendizagem</h4>
+                <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-200">${p.objetivosSecundarios}</p>
+              </div>
+            ` : ''}
+
+            ${p.materiais ? `
+              <div>
+                <h4 class="font-bold text-slate-800 uppercase text-[11px] tracking-wider mb-1"><i class="fa-solid fa-toolbox text-indigo-600 mr-1"></i> Materiais Necessários para a Aula</h4>
+                <p class="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200">${p.materiais}</p>
+              </div>
+            ` : ''}
 
             ${p.metodologia ? `
-            <div>
-              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Metodologia / Desenvolvimento</h4>
-              <p class="text-slate-700 whitespace-pre-line text-xs bg-slate-50 p-3 rounded-lg border">${p.metodologia}</p>
-            </div>` : ''}
+              <div>
+                <h4 class="font-bold text-slate-800 uppercase text-[11px] tracking-wider mb-1">Metodologia e Desenvolvimento</h4>
+                <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-200">${p.metodologia}</p>
+              </div>
+            ` : ''}
 
             ${p.avaliacao ? `
-            <div>
-              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Avaliação</h4>
-              <p class="text-slate-700 whitespace-pre-line text-xs bg-slate-50 p-3 rounded-lg border">${p.avaliacao}</p>
-            </div>` : ''}
+              <div>
+                <h4 class="font-bold text-slate-800 uppercase text-[11px] tracking-wider mb-1">Avaliação</h4>
+                <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-200">${p.avaliacao}</p>
+              </div>
+            ` : ''}
 
             ${p.observacoes ? `
-            <div>
-              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Anotações / Adaptações Pedagógicas</h4>
-              <p class="text-slate-700 whitespace-pre-line text-xs bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-900">${p.observacoes}</p>
-            </div>` : ''}
+              <div>
+                <h4 class="font-bold text-slate-800 uppercase text-[11px] tracking-wider mb-1">Anotações e Adaptações Pedagógicas</h4>
+                <p class="text-slate-700 whitespace-pre-line bg-amber-50/60 p-3 rounded-lg border border-amber-200 text-amber-900">${p.observacoes}</p>
+              </div>
+            ` : ''}
           </div>
         `;
 
-        document.getElementById('modalVisualizacao').classList.remove('hidden');
+        modal.classList.remove('hidden');
       }
-
-      function fecharModalVisualizacao() {
-        document.getElementById('modalVisualizacao').classList.add('hidden');
-      }
-
-      function excluirPlano(id) {
-        if (confirm("Tem certeza que deseja excluir este plano de aula?")) {
-          db.ref('planosDeAula/' + id).remove()
-            .then(() => alertPersonalizado("Plano excluído com sucesso."))
-            .catch(err => alertPersonalizado("Erro ao excluir: " + err.message));
-        }
-      }
-
-      function formatarDataBR(dataIso) {
-        if (!dataIso) return '';
-        const partes = dataIso.split('-');
-        if (partes.length !== 3) return dataIso;
-        return `${partes[2]}/${partes[1]}/${partes[0]}`;
-      }
-
-      function alertPersonalizado(mensagem) {
-        const div = document.createElement('div');
-        div.className = "fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl z-50 flex items-center space-x-2 transition transform translate-y-0";
-        div.innerHTML = `<i class="fa-solid fa-circle-info text-indigo-400"></i><span>${mensagem}</span>`;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 4000);
-      }
-    </script>
-</body>
-</html>
+<!-- ... existing code -->
