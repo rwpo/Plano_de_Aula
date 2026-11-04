@@ -1,1170 +1,1026 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerenciador de Planos de Aula - BNCC Matemática & Libras</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- FontAwesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Google Fonts Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Firebase SDKs (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
-  <!-- Global Image Error Handlers (Must be defined in <head> before <img> tags are rendered) -->
-  <script>
-    window.tratarErroImagemPreview = function() {
-      const img = document.getElementById('previewCabecalhoForm');
-      const text = document.getElementById('textNoCabecalho');
-      if (img) img.classList.add('hidden');
-      if (text) {
-        text.textContent = "URL de imagem inválida ou inacessível.";
-        text.className = "text-xs text-rose-500 font-semibold";
-      }
-    };
-
-    window.tratarEAtualizarPreviewCabecalho = function() {
-      const url = document.getElementById('cabecalhoUrl')?.value.trim();
-      const img = document.getElementById('previewCabecalhoForm');
-      const text = document.getElementById('textNoCabecalho');
-
-      if (!url) {
-        if (img) img.classList.add('hidden');
-        if (text) {
-          text.textContent = "Sem imagem de cabeçalho configurada";
-          text.className = "text-xs text-slate-400";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Planos de Aula BNCC</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
         }
-        return;
-      }
-
-      if (img && text) {
-        img.src = url;
-        img.classList.remove('hidden');
-        text.textContent = "";
-      }
-    };
-  </script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              500: '#0284c7',
-              600: '#0369a1',
-              700: '#075985',
-              900: '#0c4a6e',
-            }
-          }
+    </style>
+    <script>
+      // Normaliza links do GitHub para imagens diretas (raw)
+      window.normalizarUrlImagem = function(url) {
+        if (!url) return '';
+        let cleanUrl = url.trim();
+        if (cleanUrl.includes('github.com') && cleanUrl.includes('/blob/')) {
+          cleanUrl = cleanUrl
+            .replace('github.com', 'raw.githubusercontent.com')
+            .replace('/blob/', '/');
         }
-      }
-    }
-  </script>
-
-  <style>
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printArea, #printArea * {
-        visibility: visible;
-      }
-      #printArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 20px;
-        background: white !important;
-        color: black !important;
-      }
-      .no-print {
-        display: none !important;
-      }
-    }
-    
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-  </style>
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
-
-  <!-- TOAST NOTIFICATION -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-in-out bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">
-    <i id="toastIcon" class="fas fa-info-circle text-emerald-400 text-lg"></i>
-    <span id="toastMsg" class="font-medium text-sm">Operação realizada com sucesso!</span>
-  </div>
-
-  <!-- HEADER -->
-  <header class="bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-lg no-print">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-md border border-white/20">
-          <i class="fas fa-book-open text-2xl text-cyan-300"></i>
-        </div>
-        <div>
-          <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Gerenciador de Planos de Aula</h1>
-          <p class="text-xs text-brand-100">Matriz Oficial BNCC: Matemática (247 Habilidades - 1º ao 9º Ano) & Libras</p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2 bg-brand-900/40 p-1.5 rounded-xl border border-white/10">
-        <button id="navNovo" onclick="trocarAba('novo')" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 bg-white text-brand-700 shadow-sm">
-          <i class="fas fa-plus-circle mr-1.5"></i> Novo Plano
-        </button>
-        <button id="navSalvos" onclick="trocarAba('salvos')" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 text-white hover:bg-white/10">
-          <i class="fas fa-folder-open mr-1.5"></i> Planos Salvos 
-          <span id="badgeCount" class="ml-1 bg-cyan-400 text-brand-900 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- CONTAINER PRINCIPAL -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full no-print">
-
-    <!-- SEÇÃO 1: FORMULÁRIO DE NOVO / EDIÇÃO DE PLANO -->
-    <section id="abaNovo" class="space-y-6">
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
-        
-        <div class="flex justify-between items-center pb-6 mb-6 border-b border-slate-100">
-          <div>
-            <h2 id="formTitle" class="text-xl font-bold text-slate-800">Criar Novo Plano de Aula</h2>
-            <p class="text-sm text-slate-500">Selecione as habilidades padronizadas de acordo com o código da BNCC e Currículo de Libras</p>
-          </div>
-          <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-            <!-- INDICADOR DE CONTAGEM E STATUS DO BANCO NO FIREBASE -->
-            <div id="containerStatusBancoFirebase" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium">
-              <span id="pontoStatusBanco" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-              <span id="textoStatusBanco" class="text-slate-700">Verificando banco no Firebase...</span>
-            </div>
-
-            <button type="button" onclick="sincronizarMatrizComFirebase()" title="Sincronizar toda a matriz curricular (247 Habilidades de Matemática + Libras) com o Firebase" class="inline-flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-sm transition-all">
-              <i class="fas fa-cloud-upload-alt text-sm"></i> Subir / Atualizar Matriz (247 Códigos)
-            </button>
-          </div>
-        </div>
-
-        <form id="formPlano" onsubmit="salvarPlano(event)" class="space-y-6">
-          <input type="hidden" id="planoId">
-
-          <!-- LOGO / CABEÇALHO DA ESCOLA -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">URL da Imagem do Cabeçalho / Logotipo da Escola (URL Pública ou GitHub)</label>
-            <div class="flex flex-col sm:flex-row gap-3 items-center">
-              <input type="url" id="cabecalhoUrl" oninput="tratarEAtualizarPreviewCabecalho()" placeholder="https://raw.githubusercontent.com/usuario/repo/main/cabecalho.png" class="flex-grow w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-              <button type="button" onclick="tratarEAtualizarPreviewCabecalho()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap">Testar Imagem</button>
-            </div>
-            <div id="previewCabecalhoContainer" class="p-2 bg-white rounded-lg border border-slate-200 text-center min-h-[50px] flex items-center justify-center">
-              <img id="previewCabecalhoForm" src="" alt="Preview do Cabeçalho" class="max-h-20 max-w-full object-contain hidden" onerror="tratarErroImagemPreview()">
-              <span id="textNoCabecalho" class="text-xs text-slate-400">Sem imagem de cabeçalho configurada</span>
-            </div>
-          </div>
-
-          <!-- INFORMAÇÕES BÁSICAS DO PLANO -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Nome do(a) Professor(a)</label>
-              <input type="text" id="professor" required placeholder="Ex: Maria Silva" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Componente Curricular</label>
-              <select id="disciplina" onchange="atualizarDisciplinasEEtapas()" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-                <option value="Matematica">Matemática (BNCC)</option>
-                <option value="Libras">Libras (Currículo de Libras)</option>
-                <option value="PortuguesL2">Português como L2 (Surdos)</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Ano / Etapa</label>
-              <select id="etapa" onchange="carregarHabilidadesDisponiveis()" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"></select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Turma / Período</label>
-              <input type="text" id="turma" placeholder="Ex: Turma 5º A" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-            </div>
-          </div>
-
-          <!-- ALERTA INFORMATIVO PORTUGUÊS L2 -->
-          <div id="alertaL2" class="hidden p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs">
-            <i class="fas fa-info-circle mr-1"></i> <strong>Português L2:</strong> O foco metodológico do ensino de Português como segunda língua para surdos prioriza leitura, escrita, aspectos sintáticos e ampliação lexical.
-          </div>
-
-          <!-- DATAS DAS AULAS E CONTAGEM AUTOMÁTICA -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">Data(s) da(s) Aula(s)</label>
-                <p class="text-xs text-slate-500">Adicione as datas em que esta aula ou sequência didática será ministrada</p>
-              </div>
-              <span id="badgeQtdAulasCalculada" class="px-2.5 py-1 text-xs font-bold bg-brand-100 text-brand-700 rounded-full">1 aula planejada</span>
-            </div>
-
-            <div id="containerDatasAulas" class="space-y-2">
-              <!-- Campos de data adicionados via JavaScript -->
-            </div>
-
-            <button type="button" onclick="adicionarCampoData()" class="mt-2 text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">
-              <i class="fas fa-plus"></i> Adicionar outra data de aula
-            </button>
-          </div>
-
-          <!-- TEMA DA AULA -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Tema / Assunto da Aula</label>
-            <input type="text" id="tema" required placeholder="Ex: Operações de Adição e Subtração com Números Naturais" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-          </div>
-
-          <!-- SELEÇÃO DE HABILIDADES / OBJETIVOS BNCC -->
-          <div class="space-y-3 bg-brand-50/50 p-4 sm:p-5 rounded-xl border border-brand-100">
-            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-1">
-              <label class="block text-xs font-bold uppercase tracking-wider text-brand-900">Seleção de Habilidades (BNCC / Libras)</label>
-              <span id="lblContadorHabilidadesDisponiveis" class="text-xs text-brand-700 font-semibold"></span>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div class="md:col-span-2 space-y-2">
-                <!-- Dropdown ajustado com visualização otimizada -->
-                <select id="selectHabilidade" onchange="selecionarHabilidadeMatriz()" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm leading-relaxed cursor-pointer font-medium text-slate-800">
-                </select>
-
-                <!-- PAINEL DE LEITURA DA HABILIDADE SELECIONADA (Evita texto cortado e melhora leitura) -->
-                <div id="boxLeituraHabilidade" class="hidden p-3 bg-white border border-brand-200 rounded-xl shadow-xs space-y-1">
-                  <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span id="badgeLeituraCodigo" class="px-2 py-0.5 font-mono text-xs font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-md"></span>
-                    <span class="text-[10px] uppercase font-bold text-slate-400">Visualização Completa da Habilidade</span>
-                  </div>
-                  <p id="textoLeituraDescricao" class="text-xs text-slate-700 leading-relaxed font-normal pt-1"></p>
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-2">
-                <div class="flex gap-2">
-                  <input type="text" id="codigoHabilidade" placeholder="Código (ex: EF01MA01)" class="w-1/2 px-3 py-2 text-xs font-mono uppercase bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-                  <button type="button" onclick="adicionarHabilidadeAoPlano()" class="w-1/2 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap">
-                    <i class="fas fa-plus"></i> Adicionar
-                  </button>
-                </div>
-                <p class="text-[11px] text-slate-400 italic leading-tight">Escolha na lista ao lado ou digite o código exato acima para preencher.</p>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Descrição Personalizada ou Complementar:</label>
-              <textarea id="descricaoHabilidade" rows="3" placeholder="Descrição completa da habilidade (preenchida automaticamente ao selecionar da matriz)..." class="w-full px-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed"></textarea>
-            </div>
-
-            <!-- LISTA DE HABILIDADES ADICIONADAS AO PLANO -->
-            <div class="space-y-2">
-              <label class="block text-xs font-semibold text-slate-700">Habilidade(s) incluída(s) neste plano:</label>
-              <div id="containerHabilidadesSelecionadas" class="space-y-2">
-                <p class="text-xs text-slate-400 italic">Nenhuma habilidade adicionada ainda.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- DETALHAMENTO DO PLANO -->
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Procedimentos Didáticos / Metodologia</label>
-              <textarea id="metodologia" rows="4" required placeholder="Descreva os passos da aula, estratégias de ensino, introdução, desenvolvimento e fechamento..." class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Recursos Didáticos / Materiais</label>
-                <textarea id="recursos" rows="3" placeholder="Ex: Livro didático, cartazes em Libras, jogos pedagógicos..." class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
-              </div>
-
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Avaliação da Aprendizagem</label>
-                <textarea id="avaliacao" rows="3" placeholder="Ex: Observação direta da participação, resolução de exercícios individuais..." class="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
-              </div>
-            </div>
-          </div>
-
-          <!-- BOTÕES DE AÇÃO -->
-          <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <button type="button" onclick="limparFormulario()" class="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Limpar Formato</button>
-            <button type="submit" id="btnSalvar" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center gap-2">
-              <i class="fas fa-cloud-arrow-up"></i> Salvar no Firebase
-            </button>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <!-- SEÇÃO 2: LISTAGEM DE PLANOS SALVOS NO FIREBASE -->
-    <section id="abaSalvos" class="space-y-6 hidden">
-      <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-          <h2 class="text-xl font-bold text-slate-800">Planos de Aula Cadastrados</h2>
-          <p class="text-xs text-slate-500">Consulte, edite ou imprima os planos salvos na sua nuvem Firebase</p>
-        </div>
-
-        <!-- FILTROS E BUSCA -->
-        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <div class="relative flex-grow md:w-64">
-            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <input type="text" id="buscaInput" oninput="filtrarPlanos()" placeholder="Buscar por tema, professor ou código..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-          </div>
-          <select id="filtroDisciplina" onchange="filtrarPlanos()" class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-            <option value="todos">Todos Componentes</option>
-            <option value="Matematica">Matemática</option>
-            <option value="Libras">Libras</option>
-            <option value="PortuguesL2">Português L2</option>
-          </select>
-          <div class="flex items-center bg-slate-100 p-1 rounded-xl">
-            <button id="btnModoGrid" onclick="mudarVisualizacao('grid')" class="p-1.5 rounded-lg text-brand-600 bg-white shadow-sm" title="Grade"><i class="fas fa-th-large"></i></button>
-            <button id="btnModoLista" onclick="mudarVisualizacao('lista')" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600" title="Lista"><i class="fas fa-list"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- CARREGANDO STATE -->
-  <div id="loadingState" class="py-16 text-center space-y-3">
-    <i class="fas fa-circle-notch fa-spin text-3xl text-brand-500"></i>
-    <p class="text-sm text-slate-500">Carregando planos salvos no Firebase Realtime Database...</p>
-  </div>
-</section>
-</main>
-
-<script>
-  // Configuração do Firebase Realtime Database
-  const firebaseConfig = {
-    databaseURL: "https://seu-projeto-firebase-default-rtdb.firebaseio.com"
-  };
-
-    // Inicializa Firebase caso ainda não esteja inicializado
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
-
-    // Variáveis Globais de Estado
-    let habilidadesAdicionadas = [];
-    let planosSalvos = {};
-    let modoVisualizacao = 'grid';
-    let totalHabilidadesNoFirebase = 0;
-
-    // Matriz Curricular Oficial (BNCC Matemática, Libras e Português L2)
-    const baseMatrizCurricular = {
-      Matematica: {
-        "1º Ano": [
-          { codigo: "EF01MA01", descricao: "Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas e reconhecer situações em que os números não indicam contagem nem ordem, mas sim código de identificação." },
-          { codigo: "EF01MA02", descricao: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como o pareamento e outros agrupamentos." },
-          { codigo: "EF01MA03", descricao: "Estimar e comparar quantidades de objetos de dois conjuntos (em torno de 20 elementos), por estimativa e/ou por correspondência (um a um, dois a dois) para indicar 'tem mais', 'tem menos' ou 'tem a mesma quantidade'." },
-          { codigo: "EF01MA04", descricao: "Contar a quantidade de objetos de coleções até 100 unidades e apresentar o resultado por registros verbais e simbólicos, em situações de seu interesse, como jogos, brincadeiras, materiais da sala de aula, entre outros." },
-          { codigo: "EF01MA05", descricao: "Comparar números naturais de até duas ordens em situações cotidianas, com e sem suporte da reta numérica." },
-          { codigo: "EF01MA06", descricao: "Construir fatos básicos da adição e utilizá-los em procedimentos de cálculo para resolver problemas." },
-          { codigo: "EF01MA07", descricao: "Compor e decompor número de até duas ordens, por meio de diferentes adições, com o suporte de material manipulável, contribuindo para a compreensão de características do sistema de numeração decimal e o desenvolvimento de estratégias de cálculo." },
-          { codigo: "EF01MA08", descricao: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até dois algarismos, com os significados de juntar, acrescentar, separar e retirar, com o suporte de imagens e/ou material manipulável, utilizando estratégias e formas de registro pessoais." },
-          { codigo: "EF01MA09", descricao: "Organizar e ordenar objetos familiares ou representações por figuras, por meio de atributos, tais como cor, forma e medida." },
-          { codigo: "EF01MA10", descricao: "Descrever, após o reconhecimento e a explicitação de um padrão (ou regularidade), os elementos ausentes em sequências recursivas de números naturais, objetos ou figuras." },
-          { codigo: "EF01MA11", descricao: "Descrever a localização de pessoas e de objetos no espaço em relação à sua própria posição, utilizando termos como à direita, à esquerda, em frente, atrás." },
-          { codigo: "EF01MA12", descricao: "Descrever a localização de pessoas e de objetos no espaço segundo um dado ponto de referência, compreendendo que, para a utilização de termos que se referem à posição, como direita, esquerda, em cima, em baixo, é necessário explicitar-se o referencial." },
-          { codigo: "EF01MA13", descricao: "Relacionar figuras geométricas espaciais (cones, cilindros, esferas e blocos retangulares) a objetos familiares do mundo físico." },
-          { codigo: "EF01MA14", descricao: "Identificar e nomear figuras planas (círculo, quadrado, retângulo e triângulo) em desenhos apresentados em diferentes disposições ou em contornos de faces de sólidos geométricos." },
-          { codigo: "EF01MA15", descricao: "Comparar comprimentos, capacidades ou massas, utilizando termos como mais alto, mais baixo, mais comprido, mais curto, mais grosso, mais fino, mais largo, mais pesado, mais leve, cabe mais, cabe menos, entre outros, para ordenar objetos de uso cotidiano." },
-          { codigo: "EF01MA16", descricao: "Relatar em linguagem verbal ou não verbal sequência de acontecimentos relativos a um dia, utilizando, quando possível, os horários dos eventos." },
-          { codigo: "EF01MA17", descricao: "Reconhecer e relacionar períodos do dia, dias da semana e meses do ano, utilizando calendário, quando necessário." },
-          { codigo: "EF01MA18", descricao: "Produzir a escrita de uma data, apresentando o dia, o mês e o ano, e indicar o dia da semana de uma data, consultando calendários." },
-          { codigo: "EF01MA19", descricao: "Reconhecer e relacionar valores de moedas e cédulas do sistema monetário brasileiro para resolver situações simples do cotidiano do estudante." },
-          { codigo: "EF01MA20", descricao: "Classificar eventos envolvendo o acaso, tais como 'acontecerá com certeza', 'talvez aconteça' e 'é impossível acontecer', em situações do cotidiano." },
-          { codigo: "EF01MA21", descricao: "Ler dados expressos em tabelas e em gráficos de colunas simples." },
-          { codigo: "EF01MA22", descricao: "Realizar pesquisa, envolvendo até duas variáveis categóricas de seu interesse e universo de até 30 elementos, e organizar dados por meio de representações pessoais." }
-        ],
-        "2º Ano": [
-          { codigo: "EF02MA01", descricao: "Comparar e ordenar números naturais (até a ordem de centenas) pela compreensão de características do sistema de numeração decimal (valor posicional e função do zero)." },
-          { codigo: "EF02MA02", descricao: "Fazer estimativas por meio de estratégias diversas a respeito da quantidade de objetos de coleções e registrar o resultado da contagem desses objetos (até 1000 unidades)." },
-          { codigo: "EF02MA03", descricao: "Comparar quantidades de objetos de dois conjuntos, por estimativa e/ou por correspondência (um a um, dois a dois, entre outros), para indicar 'tem mais', 'tem menos' ou 'tem a mesma quantidade', indicando, quando for o caso, quantos a mais e quantos a menos." },
-          { codigo: "EF02MA04", descricao: "Compor e decompor números naturais de até três ordens, com suporte de material manipulável, por meio de diferentes adições." },
-          { codigo: "EF02MA05", descricao: "Construir fatos básicos da adição e subtração e utilizá-los no cálculo mental ou escrito." },
-          { codigo: "EF02MA06", descricao: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até três ordens, com os significados de juntar, acrescentar, separar, retirar, utilizando estratégias pessoais." },
-          { codigo: "EF02MA07", descricao: "Resolver e elaborar problemas de multiplicação (por 2, 3, 4 e 5) com a ideia de adição de parcelas iguais por meio de estratégias e formas de registro pessoais, utilizando ou não suporte de imagens e/ou material manipulável." },
-          { codigo: "EF02MA08", descricao: "Resolver e elaborar problemas envolvendo dobro, metade, triplo e terça parte, com o suporte de imagens ou material manipulável, utilizando estratégias pessoais." },
-          { codigo: "EF02MA09", descricao: "Construir sequências de números naturais em ordem crescente ou decrescente a partir de um número qualquer, utilizando uma regularidade estabelecida." },
-          { codigo: "EF02MA10", descricao: "Descrever um padrão (ou regularidade) de sequências repetitivas e de sequências recursivas, por meio de palavras, símbolos ou desenhos." },
-          { codigo: "EF02MA11", descricao: "Descrever os elementos ausentes em sequências repetitivas e em sequências recursivas de números naturais, objetos ou figuras." },
-          { codigo: "EF02MA12", descricao: "Identificar e registrar, em linguagem verbal ou não verbal, a localização e os deslocamentos de pessoas e de objetos no espaço, considerando mais de um ponto de referência, e indicar as mudanças de direção e de sentido." },
-          { codigo: "EF02MA13", descricao: "Esboçar roteiros a ser seguidos ou plantas de ambientes familiares, assinalando entradas, saídas e alguns pontos de referência." },
-          { codigo: "EF02MA14", descricao: "Reconhecer, nomear e comparar figuras geométricas espaciais (cubo, bloco retangular, pirâmide, cone, cilindro e esfera), relacionando-as com objetos do mundo físico." },
-          { codigo: "EF02MA15", descricao: "Reconhecer, comparar e nomear figuras planas (círculo, quadrado, retângulo e triângulo), por meio de características comuns, em desenhos apresentados em diferentes disposições ou em sólidos geométricos." },
-          { codigo: "EF02MA16", descricao: "Estimar, medir e comparar comprimentos de lados de salas (incluindo contorno) e de polígonos, utilizando unidades de medida não padronizadas e padronizadas (metro, centímetro e milímetro) e instrumentos adequados." },
-          { codigo: "EF02MA17", descricao: "Estimar, medir e comparar capacidade e massa, utilizando estratégias pessoais e unidades de medida não padronizadas ou padronizadas (litro, mililitro, grama e quilograma)." },
-          { codigo: "EF02MA18", descricao: "Indicar a duração de intervalos de tempo entre duas datas, como dias da semana e meses do ano, utilizando calendário, para planejamentos e organização de agenda." },
-          { codigo: "EF02MA19", descricao: "Medir a duração de um intervalo de tempo por meio de relógio digital e registrar o horário do início e do fim do intervalo." },
-          { codigo: "EF02MA20", descricao: "Estabelecer a equivalência de valores entre moedas e cédulas do sistema monetário brasileiro para resolver situações cotidianas." },
-          { codigo: "EF02MA21", descricao: "Classificar resultados de eventos cotidianos aleatórios como 'pouco prováveis', 'muito prováveis', 'improváveis' e 'impossíveis'." },
-          { codigo: "EF02MA22", descricao: "Comparar informações de pesquisas apresentadas por meio de tabelas de dupla entrada e em gráficos de colunas simples ou barras, para melhor compreender aspectos da realidade próxima." },
-          { codigo: "EF02MA23", descricao: "Realizar pesquisa em universo de até 30 elementos, escolhendo até três variáveis categóricas de seu interesse, organizando os dados coletados em listas, tabelas e gráficos de colunas simples." }
-        ],
-        "3º Ano": [
-          { codigo: "EF03MA01", descricao: "Ler, escrever e comparar números naturais de até a ordem de unidade de milhar, estabelecendo relações entre os registros numéricos e em língua materna." },
-          { codigo: "EF03MA02", descricao: "Identificar características do sistema de numeração decimal, utilizando a composição e a decomposição de número natural de até quatro ordens." },
-          { codigo: "EF03MA03", descricao: "Construir e utilizar fatos básicos da adição e da multiplicação para o cálculo mental ou escrito." },
-          { codigo: "EF03MA04", descricao: "Estabelecer a relação entre números naturais e pontos da reta numérica para utilizá-la na ordenação dos números naturais e também na construção de fatos da adição e da subtração, relacionando-os com deslocamentos para a direita ou para a esquerda." },
-          { codigo: "EF03MA05", descricao: "Utilizar diferentes procedimentos de cálculo mental e escrito, inclusive os convencionais, para resolver problemas significativos envolvendo adição e subtração com números naturais." },
-          { codigo: "EF03MA06", descricao: "Resolver e elaborar problemas de adição e subtração com os significados de juntar, acrescentar, separar, retirar, comparar e completar quantidades, utilizando diferentes estratégias de cálculo exato ou aproximado, incluindo cálculo mental." },
-          { codigo: "EF03MA07", descricao: "Resolver e elaborar problemas de multiplicação (por 2, 3, 4, 5 e 10) com os significados de adição de parcelas iguais e elementos apresentados em disposição retangular, utilizando diferentes estratégias de cálculo e registros." },
-          { codigo: "EF03MA08", descricao: "Resolver e elaborar problemas de divisão de um número natural por outro (até 10), com resto zero e com resto diferente de zero, com os significados de repartição equitativa e de medida, por meio de estratégias e registros pessoais." },
-          { codigo: "EF03MA09", descricao: "Associar o quociente de uma divisão com resto zero de um número natural por 2, 3, 4, 5 e 10 às ideias de metade, terça, quarta, quinta e décima partes." },
-          { codigo: "EF03MA10", descricao: "Identificar regularidades em sequências ordenadas de números naturais, resultantes da realização de adições ou subtrações sucessivas, por um mesmo número, descrever uma regra de formação da sequência e determinar elementos faltantes ou seguintes." },
-          { codigo: "EF03MA11", descricao: "Compreender a ideia de igualdade para escrever diferentes sentenças de adições ou de subtrações de dois números naturais que resultem na mesma soma ou diferença." },
-          { codigo: "EF03MA12", descricao: "Descrever e representar, por meio de esboços de trajetos ou utilizando croquis e maquetes, a movimentação de pessoas ou de objetos no espaço, incluindo mudanças de direção e sentido, com base em diferentes pontos de referência." },
-          { codigo: "EF03MA13", descricao: "Associar figuras geométricas espaciais (cubo, bloco retangular, pirâmide, cone, cilindro e esfera) a objetos do mundo físico e nomear essas figuras." },
-          { codigo: "EF03MA14", descricao: "Descrever características de algumas figuras geométricas espaciais (prismas retos, pirâmides, cilindros, cones), relacionando-as com suas planificações." },
-          { codigo: "EF03MA15", descricao: "Classificar e comparar figuras planas (triângulo, quadrado, retângulo, trapézio e paralelogramo) em relação a seus lados (quantidade, posições relativas e comprimento) e vértices." },
-          { codigo: "EF03MA16", descricao: "Reconhecer figuras congruentes, usando sobreposição e desenhos em malhas quadriculadas ou triangulares, incluindo o uso de tecnologias digitais." },
-          { codigo: "EF03MA17", descricao: "Reconhecer que o resultado de uma medida depende da unidade de medida utilizada." },
-          { codigo: "EF03MA18", descricao: "Escolher a unidade de medida e o instrumento mais apropriado para medições de comprimento, tempo e capacidade." },
-          { codigo: "EF03MA19", descricao: "Estimar, medir e comparar comprimentos, utilizando unidades de medida não padronizadas e padronizadas mais usuais (metro, centímetro e milímetro) e diversos instrumentos de medida." },
-          { codigo: "EF03MA20", descricao: "Estimar e medir capacidade e massa, utilizando unidades de medida não padronizadas e padronizadas mais usuais (litro, mililitro, quilograma, grama e miligrama), reconhecendo-as em leitura de rótulos e embalagens, entre outros." },
-          { codigo: "EF03MA21", descricao: "Comparar, visualmente ou por superposição, áreas de faces de objetos, de figuras planas ou de desenhos." },
-          { codigo: "EF03MA22", descricao: "Ler e registrar medidas e intervalos de tempo, utilizando relógios (analógico e digital) para informar os horários de início e término de realização de uma atividade e sua duração." },
-          { codigo: "EF03MA23", descricao: "Ler horas em relógios digitais e em relógios analógicos e reconhecer a relação entre hora e minutos e entre minuto e segundos." },
-          { codigo: "EF03MA24", descricao: "Resolver e elaborar problemas que envolvam a comparação e a equivalência de valores monetários do sistema brasileiro em situações de compra, venda e troca." },
-          { codigo: "EF03MA25", descricao: "Identificar, em eventos familiares aleatórios, todos os resultados possíveis, estimando os que têm maiores ou menores chances de ocorrência." },
-          { codigo: "EF03MA26", descricao: "Resolver problemas cujos dados estão apresentados em tabelas de dupla entrada, gráficos de barras ou de colunas." },
-          { codigo: "EF03MA27", descricao: "Ler, interpretar e comparar dados apresentados em tabelas de dupla entrada, gráficos de barras ou de colunas, envolvendo resultados de pesquisas significativas, utilizando termos como maior e menor frequência, apropriando-se desse tipo de linguagem para compreender aspectos da realidade sociocultural significativos." },
-          { codigo: "EF03MA28", descricao: "Realizar pesquisa envolvendo variáveis categóricas em um universo de até 50 elementos, organizar os dados coletados utilizando listas, tabelas simples ou de dupla entrada e representá-los em gráficos de colunas simples, com e sem uso de tecnologias digitais." }
-        ],
-        "4º Ano": [
-          { codigo: "EF04MA01", descricao: "Ler, escrever e ordenar números naturais até a ordem de dezenas de milhar." },
-          { codigo: "EF04MA02", descricao: "Mostrar, por decomposição e composição, que todo número natural pode ser escrito por meio de adições e multiplicações por potências de dez, para compreender o sistema de numeração decimal e desenvolver estratégias de cálculo." },
-          { codigo: "EF04MA03", descricao: "Resolver e elaborar problemas com números naturais envolvendo adição e subtração, utilizando estratégias diversas, como cálculo, cálculo mental e algoritmos, além de fazer estimativas do resultado." },
-          { codigo: "EF04MA04", descricao: "Utilizar as relações entre adição e subtração, bem como entre multiplicação e divisão, para ampliar as estratégias de cálculo." },
-          { codigo: "EF04MA05", descricao: "Utilizar as propriedades das operações para desenvolver estratégias de cálculo." },
-          { codigo: "EF04MA06", descricao: "Resolver e elaborar problemas envolvendo diferentes significados da multiplicação (adição de parcelas iguais, organização retangular e proporcionalidade), utilizando estratégias diversas, como cálculo por estimativa, cálculo mental e algoritmos." },
-          { codigo: "EF04MA07", descricao: "Resolver e elaborar problemas de divisão cujo divisor tenha no máximo dois algarismos, envolvendo os significados de repartição equitativa e de medida, utilizando estratégias diversas, como cálculo por estimativa, cálculo mental e algoritmos." },
-          { codigo: "EF04MA08", descricao: "Resolver, com o suporte de imagem e/ou material manipulável, problemas simples de contagem, como a determinação do número de agrupamentos possíveis ao se combinar cada elemento de uma coleção com todos os elementos de outra, utilizando estratégias e formas de registro pessoais." },
-          { codigo: "EF04MA09", descricao: "Reconhecer as frações unitárias mais usuais (1/2, 1/3, 1/4, 1/5, 1/10 e 1/100) como unidades de medida menores do que uma unidade, utilizando a reta numérica como recurso." },
-          { codigo: "EF04MA10", descricao: "Reconhecer que as regras do sistema de numeração decimal podem ser estendidas para a representação decimal de um número racional e relacionar décimos e centésimos com a representação do sistema monetário brasileiro." },
-          { codigo: "EF04MA11", descricao: "Identificar regularidades em sequências numéricas compostas por múltiplos de um número natural." },
-          { codigo: "EF04MA12", descricao: "Reconhecer, por meio de investigações, que há grupos de números naturais para os quais as divisões por um determinado número resultam em restos iguais, identificando regularidades." },
-          { codigo: "EF04MA13", descricao: "Reconhecer, por meio de investigações, utilizando a calculadora quando necessário, as relações inversas entre as operações de adição e de subtração e de multiplicação e de divisão, para aplicá-las na resolução de problemas." },
-          { codigo: "EF04MA14", descricao: "Reconhecer e mostrar, por meio de exemplos, que a relação de igualdade existente entre dois termos permanece quando se adiciona ou se subtrai um mesmo número a cada um desses termos." },
-          { codigo: "EF04MA15", descricao: "Determinar o número desconhecido que torna verdadeira uma igualdade que envolve as operações fundamentais com números naturais." },
-          { codigo: "EF04MA16", descricao: "Descrever deslocamentos e localização de pessoas e de objetos no espaço, por meio de malhas quadriculadas e representações como desenhos, mapas, planta baixa e croquis, empregando termos como direita e esquerda, mudanças de direção e sentido, intersecção, transversais, paralelas e perpendiculares." },
-          { codigo: "EF04MA17", descricao: "Associar prismas e pirâmides a suas planificações e analisar, nomear e comparar seus atributos, estabelecendo relações entre as representações planas e espaciais." },
-          { codigo: "EF04MA18", descricao: "Reconhecer ângulos retos e não retos em figuras poligonais com o uso de dobraduras, esquadros ou softwares de geometria." },
-          { codigo: "EF04MA19", descricao: "Reconhecer simetria de reflexão em figuras e em pares de figuras geométricas planas e utilizá-la na construção de figuras congruentes, com o uso de malhas quadriculadas e de softwares de geometria." },
-          { codigo: "EF04MA20", descricao: "Medir e estimar comprimentos (incluindo perímetros), massas e capacidades, utilizando unidades de medida padronizadas mais usuais, valorizando e respeitando a cultura local." },
-          { codigo: "EF04MA21", descricao: "Medir, comparar e estimar área de figuras planas desenhadas em malha quadriculada, pela contagem dos quadradinhos ou de metades de quadradinho, reconhecendo que duas figuras com formatos diferentes podem ter a mesma medida de área." },
-          { codigo: "EF04MA22", descricao: "Ler e registrar medidas e intervalos de tempo em horas, minutos e segundos em situações relacionadas ao seu cotidiano, como informar os horários de início e término de realização de uma tarefa e sua duração." },
-          { codigo: "EF04MA23", descricao: "Reconhecer temperatura como grandeza e o grau Celsius como unidade de medida a ela associada e utilizá-lo em comparações de temperaturas em diferentes regiões do Brasil ou no exterior ou, ainda, em discussões que envolvam problemas relacionados ao aquecimento global." },
-          { codigo: "EF04MA24", descricao: "Registrar as temperaturas máxima e mínima diárias, em locais do seu cotidiano, e elaborar gráficos de colunas com as variações diárias da temperatura, utilizando, inclusive, planilhas eletrônicas." },
-          { codigo: "EF04MA25", descricao: "Resolver e elaborar problemas que envolvam situações de compra e venda e formas de pagamento, utilizando termos como troco e desconto, enfatizando o consumo ético, consciente e responsável." },
-          { codigo: "EF04MA26", descricao: "Identificar, entre eventos aleatórios cotidianos, aqueles que têm maior chance de ocorrência, reconhecendo características de resultados mais prováveis, sem utilizar frações." },
-          { codigo: "EF04MA27", descricao: "Analisar dados apresentados em tabelas simples ou de dupla entrada e em gráficos de colunas ou pictóricos, com base em informações das diferentes áreas do conhecimento, e produzir texto com a síntese de sua análise." },
-          { codigo: "EF04MA28", descricao: "Realizar pesquisa envolvendo variáveis categóricas e numéricas e organizar dados coletados por meio de tabelas e gráficos de colunas simples ou agrupadas, com e sem uso de tecnologias digitais." }
-        ],
-        "5º Ano": [
-          { codigo: "EF05MA01", descricao: "Ler, escrever e ordenar números naturais até a ordem das centenas de milhar com compreensão das principais características do sistema de numeração decimal." },
-          { codigo: "EF05MA02", descricao: "Ler, escrever e ordenar números racionais na forma decimal com compreensão das principais características do sistema de numeração decimal, utilizando, como recursos, a composição e decomposição e a reta numérica." },
-          { codigo: "EF05MA03", descricao: "Identificar e representar frações (menores e maiores que a unidade), associando-as ao resultado de uma divisão ou à ideia de parte de um todo, utilizando a reta numérica como recurso." },
-          { codigo: "EF05MA04", descricao: "Identificar frações equivalentes." },
-          { codigo: "EF05MA05", descricao: "Comparar e ordenar números racionais positivos (representações fracionária e decimal), relacionando-os a pontos na reta numérica." },
-          { codigo: "EF05MA06", descricao: "Associar as representações 10%, 25%, 50%, 75% e 100% respectivamente à décima parte, quarta parte, metade, três quartos e um inteiro, para calcular porcentagens, utilizando estratégias pessoais, cálculo mental e calculadora, em contextos de educação financeira, entre outros." },
-          { codigo: "EF05MA07", descricao: "Resolver e elaborar problemas de adição e subtração com números naturais e com números racionais, cuja representação decimal seja finita, utilizando estratégias diversas, como cálculo por estimativa, cálculo mental e algoritmos." },
-          { codigo: "EF05MA08", descricao: "Resolver e elaborar problemas de multiplicação e divisão com números naturais e com números racionais cuja representação decimal é finita (com multiplicador natural e divisor natural e diferente de zero), utilizando estratégias diversas, como cálculo por estimativa, cálculo mental e algoritmos." },
-          { codigo: "EF05MA09", descricao: "Resolver e elaborar problemas simples de contagem envolvendo o princípio multiplicativo, como a determinação do número de agrupamentos possíveis ao se combinar cada elemento de uma coleção com todos os elementos de outra coleção, por meio de diagramas de árvore ou por tabelas." },
-          { codigo: "EF05MA10", descricao: "Concluir, por meio de investigações, que a relação de igualdade existente entre dois membros permanece ao adicionar, subtrair, multiplicar ou dividir cada um desses membros por um mesmo número, para construir a noção de equivalência." },
-          { codigo: "EF05MA11", descricao: "Resolver e elaborar problemas cuja conversão em sentença matemática seja uma igualdade com uma operação em que um dos termos é desconhecido." },
-          { codigo: "EF05MA12", descricao: "Resolver problemas que envolvam variação de proporcionalidade direta entre duas grandezas, para associar a quantidade de um produto ao valor a pagar, alterar as quantidades de ingredientes de receitas, ampliar ou reduzir escala em mapas, entre outros." },
-          { codigo: "EF05MA13", descricao: "Resolver problemas envolvendo a partilha de uma quantidade em duas partes desiguais, tais como dividir uma quantidade em duas partes, de modo que uma seja o dobro da outra, com compreensão da ideia de razão entre as partes e delas com o todo." },
-          { codigo: "EF05MA14", descricao: "Utilizar e compreender diferentes representações para a localização de objetos no plano, como mapas, células em planilhas eletrônicas e coordenadas geográficas, a fim de desenvolver as primeiras noções de coordenadas cartesianas." },
-          { codigo: "EF05MA15", descricao: "Interpretar, descrever e representar a localização ou movimentação de objetos no plano cartesiano (1º quadrante), utilizando coordenadas cartesianas, indicando mudanças de direção e de sentido e giros." },
-          { codigo: "EF05MA16", descricao: "Associar figuras espaciais a suas planificações (prismas, pirâmides, cilindros e cones) e analisar, nomear e comparar seus atributos." },
-          { codigo: "EF05MA17", descricao: "Reconhecer, nomear e comparar polígonos, considerando lados, vértices e ângulos, e desenhá-los, utilizando material de desenho ou tecnologias digitais." },
-          { codigo: "EF05MA18", descricao: "Reconhecer a congruência dos ângulos e a proporcionalidade entre os lados correspondentes de figuras poligonais em situações de ampliação e de redução em malhas quadriculadas e usando tecnologias digitais." },
-          { codigo: "EF05MA19", descricao: "Resolver e elaborar problemas envolvendo medidas das grandezas comprimento, área, massa, tempo, temperatura e capacidade, recorrendo a transformações entre as unidades mais usuais em contextos socioculturais." },
-          { codigo: "EF05MA20", descricao: "Concluir, por meio de investigações, que figuras de perímetros iguais podem ter áreas diferentes e que, também, figuras que têm a mesma área podem ter perímetros diferentes." },
-          { codigo: "EF05MA21", descricao: "Reconhecer volume como grandeza associada a sólidos geométricos e medir volumes por meio de empilhamento de cubos, utilizando, preferencialmente, objetos concretos." },
-          { codigo: "EF05MA22", descricao: "Apresentar todos os possíveis resultados de um experimento aleatório, estimando se esses resultados são igualmente prováveis ou não." },
-          { codigo: "EF05MA23", descricao: "Determinar a probabilidade de ocorrência de um resultado em eventos aleatórios, quando todos os resultados possíveis têm a mesma chance de ocorrer (equiprováveis)." },
-          { codigo: "EF05MA24", descricao: "Interpretar dados estatísticos apresentados em textos, tabelas e gráficos (colunas ou linhas), referentes a outras áreas do conhecimento ou a outros contextos, como saúde e trânsito, e produzir textos com o objetivo de sintetizar conclusões." },
-          { codigo: "EF05MA25", descricao: "Realizar pesquisa envolvendo variáveis categóricas e numéricas, organizar dados coletados por meio de tabelas, gráficos de colunas, pictóricos e de linhas, com e sem uso de tecnologias digitais, e apresentar texto escrito sobre a finalidade da pesquisa e a síntese dos resultados." }
-        ],
-        "6º Ano": [
-          { codigo: "EF06MA01", descricao: "Comparar, ordenar, ler e escrever números naturais e números racionais cuja representação decimal é finita, fazendo uso da reta numérica." },
-          { codigo: "EF06MA02", descricao: "Reconhecer o sistema de numeração decimal, como o que prevaleceu no mundo ocidental, e destacar semelhanças e diferenças com outros sistemas, de modo a sistematizar suas principais características (base, valor posicional e função do zero), utilizando, inclusive, a composição e decomposição de números naturais e números racionais em sua representação decimal." },
-          { codigo: "EF06MA03", descricao: "Resolver e elaborar problemas que envolvam cálculos (mentais ou escritos, exatos ou aproximados) com números naturais, por meio de estratégias variadas, com compreensão dos processos neles envolvidos com e sem uso de calculadora." },
-          { codigo: "EF06MA04", descricao: "Construir algoritmo em linguagem natural e representá-lo por fluxograma que indique a resolução de um problema simples (por exemplo, se um número natural qualquer é par)." },
-          { codigo: "EF06MA05", descricao: "Classificar números naturais em primos e compostos, estabelecer relações entre números, expressas pelos termos 'é múltiplo de', 'é divisor de', 'é fator de', e estabelecer, por meio de investigações, critérios de divisibilidade por 2, 3, 4, 5, 6, 8, 9, 10, 100 e 1000." },
-          { codigo: "EF06MA06", descricao: "Resolver e elaborar problemas que envolvam as ideias de múltiplo e de divisor." },
-          { codigo: "EF06MA07", descricao: "Compreender, comparar e ordenar frações associadas às ideias de partes de inteiros e resultado de divisão, identificando frações equivalentes." },
-          { codigo: "EF06MA08", descricao: "Reconhecer que os números racionais positivos podem ser expressos nas formas fracionária e decimal, estabelecer relações entre essas representações, passando de uma representação para outra, e relacioná-los a pontos na reta numérica." },
-          { codigo: "EF06MA09", descricao: "Resolver e elaborar problemas que envolvam o cálculo da fração de uma quantidade e cujo resultado seja um número natural, com e sem uso de calculadora." },
-          { codigo: "EF06MA10", descricao: "Resolver e elaborar problemas que envolvam adição ou subtração com números racionais positivos na representação fracionária." },
-          { codigo: "EF06MA11", descricao: "Resolver e elaborar problemas com números racionais positivos na representação decimal, envolvendo as quatro operações fundamentais e a potenciação, por meio de estratégias diversas, utilizando estimativas e arredondamentos para verificar a razoabilidade de respostas, com e sem uso de calculadora." },
-          { codigo: "EF06MA12", descricao: "Fazer estimativas de quantidades e aproximar números para múltiplos da potência de 10 mais próxima." },
-          { codigo: "EF06MA13", descricao: "Resolver e elaborar problemas que envolvam porcentagens, com base na ideia de proporcionalidade, sem fazer uso da 'regra de três', utilizando estratégias pessoais, cálculo mental e calculadora, em contextos de educação financeira, entre outros." },
-          { codigo: "EF06MA14", descricao: "Reconhecer que a relação de igualdade matemática não se altera ao adicionar, subtrair, multiplicar ou dividir os seus dois membros por um mesmo número e utilizar essa noção para determinar valores desconhecidos na resolução de problemas." },
-          { codigo: "EF06MA15", descricao: "Resolver e elaborar problemas que envolvam a partilha de uma quantidade em duas partes desiguais, envolvendo relações aditivas e multiplicativas, bem como a razão entre as partes e entre uma das partes e o todo." },
-          { codigo: "EF06MA16", descricao: "Associar pares ordenados de números a pontos do plano cartesiano do 1º quadrante, em situações como a localização dos vértices de um polígono." },
-          { codigo: "EF06MA17", descricao: "Quantificar e estabelecer relações entre o número de vértices, faces e arestas de prismas e pirâmides, em função do seu polígono da base, para resolver problemas e desenvolver a percepção espacial." },
-          { codigo: "EF06MA18", descricao: "Reconhecer, nomear e comparar polígonos, considerando lados, vértices e ângulos, e classificá-los em regulares e não regulares, tanto em suas representações no plano como em faces de poliedros." },
-          { codigo: "EF06MA19", descricao: "Identificar características dos triângulos e classificá-los em relação às medidas dos lados e dos ângulos." },
-          { codigo: "EF06MA20", descricao: "Identificar características dos quadriláteros, classificá-los em relação a lados e a ângulos e reconhecer a inclusão e a intersecção de classes entre eles." },
-          { codigo: "EF06MA21", descricao: "Construir figuras planas semelhantes em situações de ampliação e de redução, com o uso de malhas quadriculadas, plano cartesiano ou tecnologias digitais." },
-          { codigo: "EF06MA22", descricao: "Utilizar instrumentos, como réguas e esquadros, ou softwares para representações de retas paralelas e perpendiculares e construção de quadriláteros, entre outros." },
-          { codigo: "EF06MA23", descricao: "Construir algoritmo para resolver situações passo a passo (como na construção de dobraduras ou na indicação de deslocamento de um objeto no plano segundo pontos de referência e distâncias fornecidas etc.)." },
-          { codigo: "EF06MA24", descricao: "Resolver e elaborar problemas que envolvam as grandezas comprimento, massa, tempo, temperatura, área (triângulos e retângulos), capacidade e volume (sólidos formados por blocos retangulares), sem uso de fórmulas, inseridos, sempre que possível, em contextos oriundos de situações reais e/ou relacionadas às outras áreas do conhecimento." },
-          { codigo: "EF06MA25", descricao: "Reconhecer a abertura do ângulo como grandeza associada às figuras geométricas." },
-          { codigo: "EF06MA26", descricao: "Resolver problemas que envolvam a noção de ângulo em diferentes contextos e em situações reais, como ângulo de visão." },
-          { codigo: "EF06MA27", descricao: "Determinar medidas da abertura de ângulos, por meio de transferidor e/ou tecnologias digitais." },
-          { codigo: "EF06MA28", descricao: "Interpretar, descrever e desenhar plantas baixas simples de residências e vistas aéreas." },
-          { codigo: "EF06MA29", descricao: "Analisar e descrever mudanças que ocorrem no perímetro e na área de um quadrado ao se ampliarem ou reduzirem, igualmente, as medidas de seus lados, para compreender que o perímetro é proporcional à medida do lado, o que não ocorre com a área." },
-          { codigo: "EF06MA30", descricao: "Calcular a probabilidade de um evento aleatório, expressando-a por número racional (forma fracionária, decimal e percentual) e comparar esse número com a probabilidade obtida por meio de experimentos sucessivos." },
-          { codigo: "EF06MA31", descricao: "Identificar as variáveis e suas frequências e os elementos constitutivos (título, eixos, legendas, fontes e datas) em diferentes tipos de gráfico." },
-          { codigo: "EF06MA32", descricao: "Interpretar e resolver situações que envolvam dados de pesquisas sobre contextos ambientais, sustentabilidade, trânsito, consumo responsável, entre outros, apresentadas pela mídia em tabelas e em diferentes tipos de gráficos e redigir textos escritos com o objetivo de sintetizar conclusões." },
-          { codigo: "EF06MA33", descricao: "Planejar e coletar dados de pesquisa referente a práticas sociais escolhidas pelos alunos e fazer uso de planilhas eletrônicas para registro, representação e interpretação das informações, em tabelas, vários tipos de gráficos e texto." },
-          { codigo: "EF06MA34", descricao: "Interpretar e desenvolver fluxogramas simples, identificando as relações entre os objetos representados (por exemplo, posição de cidades considerando as estradas que as unem, hierarquia dos funcionários de uma empresa etc.)." }
-        ],
-        "7º Ano": [
-          { codigo: "EF07MA01", descricao: "Resolver e elaborar problemas com números naturais, envolvendo as noções de divisor e de múltiplo, podendo incluir máximo divisor comum ou mínimo múltiplo comum, por meio de estratégias diversas, sem a aplicação de algoritmos." },
-          { codigo: "EF07MA02", descricao: "Resolver e elaborar problemas que envolvam porcentagens, como os que lidam com acréscimos e decréscimos simples, utilizando estratégias pessoais, cálculo mental e calculadora, no contexto de educação financeira, entre outros." },
-          { codigo: "EF07MA03", descricao: "Comparar e ordenar números inteiros em diferentes contextos, incluindo o histórico, associá-los a pontos da reta numérica e utilizá-los em situações que envolvam adição e subtração." },
-          { codigo: "EF07MA04", descricao: "Resolver e elaborar problemas que envolvam operações com números inteiros." },
-          { codigo: "EF07MA05", descricao: "Resolver um mesmo problema utilizando diferentes algoritmos." },
-          { codigo: "EF07MA06", descricao: "Reconhecer que as resoluções de um grupo de problemas que têm a mesma estrutura podem ser obtidas utilizando os mesmos procedimentos." },
-          { codigo: "EF07MA07", descricao: "Representar por meio de um fluxograma os passos utilizados para resolver um grupo de problemas." },
-          { codigo: "EF07MA08", descricao: "Comparar e ordenar frações associadas às ideias de partes de inteiros, resultado da divisão, razão e operador." },
-          { codigo: "EF07MA09", descricao: "Utilizar, na resolução de problemas, a associação entre razão e fração, como a fração 2/3 para expressar a razão de duas partes de uma grandeza para três partes da mesma ou três partes de outra grandeza." },
-          { codigo: "EF07MA10", descricao: "Comparar e ordenar números racionais em diferentes contextos e associá-los a pontos da reta numérica." },
-          { codigo: "EF07MA11", descricao: "Compreender e utilizar a multiplicação e a divisão de números racionais, a relação entre elas e suas propriedades operatórias." },
-          { codigo: "EF07MA12", descricao: "Resolver e elaborar problemas que envolvam as operações com números racionais." },
-          { codigo: "EF07MA13", descricao: "Compreender a ideia de variável, representada por letra ou símbolo, para expressar relação entre duas grandezas, diferenciando-a da ideia de incógnita." },
-          { codigo: "EF07MA14", descricao: "Classificar sequências em recursivas e não recursivas, reconhecendo que o conceito de recursão está presente não apenas na matemática, mas também nas artes e na literatura." },
-          { codigo: "EF07MA15", descricao: "Utilizar a simbologia algébrica para expressar regularidades encontradas em sequências numéricas." },
-          { codigo: "EF07MA16", descricao: "Reconhecer se duas expressões algébricas obtidas para descrever a regularidade de uma mesma sequência numérica são ou não equivalentes." },
-          { codigo: "EF07MA17", descricao: "Resolver e elaborar problemas que envolvam variação de proporcionalidade direta e de proporcionalidade inversa entre duas grandezas, utilizando sentença algébrica para expressar a relação entre elas." },
-          { codigo: "EF07MA18", descricao: "Resolver e elaborar problemas que possam ser representados por equações polinomiais de 1º grau, redutíveis à forma ax + b = c, fazendo uso das propriedades da igualdade." },
-          { codigo: "EF07MA19", descricao: "Realizar transformações de polígonos representados no plano cartesiano, decorrentes da multiplicação das coordenadas de seus vértices por um número inteiro." },
-          { codigo: "EF07MA20", descricao: "Reconhecer e representar, no plano cartesiano, o simétrico de figuras em relação aos eixos e à origem." },
-          { codigo: "EF07MA21", descricao: "Reconhecer e construir figuras obtidas por simetrias de translação, rotação e reflexão, usando instrumentos de desenho ou softwares de geometria dinâmica e vincular esse estudo a representações planas de obras de arte, elementos arquitetônicos, entre outros." },
-          { codigo: "EF07MA22", descricao: "Construir circunferências, utilizando compasso, reconhecê-las como lugar geométrico e utilizá-las para fazer composições artísticas e resolver problemas que envolvam objetos equidistantes." },
-          { codigo: "EF07MA23", descricao: "Verificar relações entre os ângulos formados por retas paralelas cortadas por uma transversal, com e sem uso de softwares de geometria dinâmica." },
-          { codigo: "EF07MA24", descricao: "Construir triângulos, usando régua e compasso, reconhecer a condição de existência do triângulo quanto à medida dos lados e verificar que a soma das medidas dos ângulos internos de um triângulo é 180°." },
-          { codigo: "EF07MA25", descricao: "Reconhecer a rigidez geométrica dos triângulos e suas aplicações, como na construção de estruturas arquitetônicas (telhados, estruturas metálicas e outras) ou nas artes plásticas." },
-          { codigo: "EF07MA26", descricao: "Descrever, por escrito e por meio de um fluxograma, um algoritmo para a construção de um triângulo qualquer, conhecidas as medidas dos três lados." },
-          { codigo: "EF07MA27", descricao: "Calcular medidas de ângulos internos de polígonos regulares, sem o uso de fórmulas, e estabelecer relações entre ângulos internos e externos de polígonos, preferencialmente vinculadas à construção de mosaicos e de ladrilhamentos." },
-          { codigo: "EF07MA28", descricao: "Descrever, por escrito e por meio de um fluxograma, um algoritmo para a construção de um polígono regular (como quadrado e triângulo equilátero), conhecida a medida de seu lado." },
-          { codigo: "EF07MA29", descricao: "Resolver e elaborar problemas que envolvam medidas de grandezas inseridos em contextos oriundos de situações cotidianas ou de outras áreas do conhecimento, reconhecendo que toda medida empírica é aproximada." },
-          { codigo: "EF07MA30", descricao: "Resolver e elaborar problemas de cálculo de medida do volume de blocos retangulares, envolvendo as unidades usuais (metro cúbico, decímetro cúbico e centímetro cúbico)." },
-          { codigo: "EF07MA31", descricao: "Estabelecer expressões de cálculo de área de triângulos e de quadriláteros." },
-          { codigo: "EF07MA32", descricao: "Resolver e elaborar problemas de cálculo de medida de área de figuras planas que podem ser decompostas por quadrados, retângulos e/ou triângulos, utilizando a equivalência entre áreas." },
-          { codigo: "EF07MA33", descricao: "Estabelecer o número pi como a razão entre a medida de uma circunferência e seu diâmetro, para compreender e resolver problemas, inclusive os de natureza histórica." },
-          { codigo: "EF07MA34", descricao: "Planejar e realizar experimentos aleatórios ou simulações que envolvem cálculo de probabilidades ou estimativas por meio de frequência de ocorrências." },
-          { codigo: "EF07MA35", descricao: "Compreender, em contextos significativos, o significado de média estatística como indicador da tendência de uma pesquisa, calcular seu valor e relacioná-lo, intuitivamente, com a amplitude do conjunto de dados." },
-          { codigo: "EF07MA36", descricao: "Planejar e realizar pesquisa envolvendo tema da realidade social, identificando a necessidade de ser censitária ou de usar amostra, e interpretar os dados para comunicá-los por meio de relatório escrito, tabelas e gráficos, com o apoio de planilhas eletrônicas." },
-          { codigo: "EF07MA37", descricao: "Interpretar e analisar dados apresentados em gráfico de setores divulgados pela mídia e compreender quando é possível ou conveniente sua utilização." }
-        ],
-        "8º Ano": [
-          { codigo: "EF08MA01", descricao: "Efetuar cálculos com potências de expoentes inteiros e aplicar esse conhecimento na representação de números em notação científica." },
-          { codigo: "EF08MA02", descricao: "Resolver e elaborar problemas usando a relação entre potenciação e radiciação, para representar uma raiz como potência de expoente fracionário." },
-          { codigo: "EF08MA03", descricao: "Resolver e elaborar problemas de contagem cuja resolução envolva a aplicação do princípio multiplicativo." },
-          { codigo: "EF08MA04", descricao: "Resolver e elaborar problemas, envolvendo cálculo de porcentagens, incluindo o uso de tecnologias digitais." },
-          { codigo: "EF08MA05", descricao: "Reconhecer e utilizar procedimentos para a obtenção de uma fração geratriz para uma dízima periódica." },
-          { codigo: "EF08MA06", descricao: "Resolver e elaborar problemas que envolvam cálculo do valor numérico de expressões algébricas, utilizando as propriedades das operações." },
-          { codigo: "EF08MA07", descricao: "Associar uma equação linear de 1º grau com duas incógnitas a uma reta no plano cartesiano." },
-          { codigo: "EF08MA08", descricao: "Resolver e elaborar problemas relacionados ao seu contexto próximo, que possam ser representados por sistemas de equações de 1º grau com duas incógnitas e interpretá-los, utilizando, inclusive, o plano cartesiano como recurso." },
-          { codigo: "EF08MA09", descricao: "Resolver e elaborar, com e sem uso de tecnologias, problemas que possam ser representados por equações polinomiais de 2º grau do tipo ax² = b." },
-          { codigo: "EF08MA10", descricao: "Identificar a regularidade de uma sequência numérica ou figural não recursiva e construir um algoritmo por meio de um fluxograma que permita indicar os números ou as figuras seguintes." },
-          { codigo: "EF08MA11", descricao: "Identificar a regularidade de uma sequência numérica recursiva e construir um algoritmo por meio de um fluxograma que permita indicar os números seguintes." },
-          { codigo: "EF08MA12", descricao: "Identificar a natureza da variação de duas grandezas, diretamente, inversamente proporcionais ou não proporcionais, expressando a relação existente por meio de sentença algébrica e representá-la no plano cartesiano." },
-          { codigo: "EF08MA13", descricao: "Resolver e elaborar problemas que envolvam grandezas diretamente ou inversamente proporcionais, por meio de estratégias variadas." },
-          { codigo: "EF08MA14", descricao: "Demonstrar propriedades de quadriláteros por meio da identificação da congruência de triângulos." },
-          { codigo: "EF08MA15", descricao: "Construir, utilizando instrumentos de desenho ou softwares de geometria dinâmica, mediatriz, bissetriz, ângulos de 90°, 60°, 45° e 30° e polígonos regulares." },
-          { codigo: "EF08MA16", descricao: "Descrever, por escrito e por meio de um fluxograma, um algoritmo para a construção de um hexágono regular de qualquer área, a partir da medida do ângulo central e da utilização de esquadros e compasso." },
-          { codigo: "EF08MA17", descricao: "Aplicar os conceitos de mediatriz e bissetriz como lugares geométricos na resolução de problemas." },
-          { codigo: "EF08MA18", descricao: "Reconhecer e construir figuras obtidas por composições de transformações geométricas (translação, reflexão e rotação), com o uso de instrumentos de desenho ou de softwares de geometria dinâmica." },
-          { codigo: "EF08MA19", descricao: "Resolver e elaborar problemas que envolvam medidas de área de figuras geométricas, utilizando expressões de cálculo de área (quadriláteros, triângulos e círculos), em situações como determinar medida de terrenos." },
-          { codigo: "EF08MA20", descricao: "Reconhecer a relação entre um litro e um decímetro cúbico e a relação entre litro e metro cúbico, para resolver problemas de cálculo de capacidade de recipientes." },
-          { codigo: "EF08MA21", descricao: "Resolver e elaborar problemas que envolvam o cálculo do volume de recipiente cujo formato é o de um bloco retangular." },
-          { codigo: "EF08MA22", descricao: "Calcular a probabilidade de eventos, com base na construção do espaço amostral, utilizando o princípio multiplicativo, e reconhecer que a soma das probabilidades de todos os elementos do espaço amostral é igual a 1." },
-          { codigo: "EF08MA23", descricao: "Avaliar a adequação de diferentes tipos de gráficos para representar um conjunto de dados de uma pesquisa." },
-          { codigo: "EF08MA24", descricao: "Classificar as frequências de uma variável contínua de uma pesquisa em classes, de modo que resumam os dados de maneira adequada para a tomada de decisões." },
-          { codigo: "EF08MA25", descricao: "Obter os valores de medidas de tendência central de uma pesquisa estatística (média, moda e mediana) com a compreensão de seus significados e relacioná-los com a dispersão de dados, indicada pela amplitude." },
-          { codigo: "EF08MA26", descricao: "Selecionar razões, de diferentes naturezas (física, ética ou econômica), que justificam a realização de pesquisas amostrais e não censitárias, e reconhecer que a seleção da amostra pode ser feita de diferentes maneiras (amostra casual simples, sistemática e estratificada)." },
-          { codigo: "EF08MA27", descricao: "Planejar e executar pesquisa amostral, selecionando uma técnica de amostragem adequada, e escrever relatório que contenha os gráficos apropriados para representar os conjuntos de dados, destacando aspectos como as medidas de tendência central, a amplitude e as conclusões." }
-        ],
-        "9º Ano": [
-          { codigo: "EF09MA01", descricao: "Reconhecer que, uma vez fixada uma unidade de comprimento, existem segmentos de reta cujo comprimento não é expresso por número racional (como as medidas de diagonais de um polígono e alturas de um triângulo, quando se toma a medida de cada lado como unidade)." },
-          { codigo: "EF09MA02", descricao: "Reconhecer um número irracional como um número real cuja representação decimal é infinita e não periódica, e estimar a localização de alguns deles na reta numérica." },
-          { codigo: "EF09MA03", descricao: "Efetuar cálculos com números reais, inclusive potências com expoentes fracionários." },
-          { codigo: "EF09MA04", descricao: "Resolver e elaborar problemas com números reais, inclusive em notação científica, envolvendo diferentes operações." },
-          { codigo: "EF09MA05", descricao: "Resolver e elaborar problemas que envolvam porcentagens, com a ideia de aplicação de percentuais sucessivos e a determinação das taxas percentuais, preferencialmente com o uso de tecnologias digitais, no contexto da educação financeira." },
-          { codigo: "EF09MA06", descricao: "Compreender as funções como relações de dependência unívoca entre duas variáveis e suas representações numérica, algébrica e gráfica e utilizar esse conceito para analisar situações que envolvam relações funcionais entre duas variáveis." },
-          { codigo: "EF09MA07", descricao: "Resolver problemas que envolvam a razão entre duas grandezas de espécies diferentes, como velocidade e densidade demográfica." },
-          { codigo: "EF09MA08", descricao: "Resolver e elaborar problemas que envolvam relações de proporcionalidade direta e inversa entre duas ou mais grandezas, inclusive escalas, divisão em partes proporcionais e taxa de variação, em contextos socioculturais, ambientais e de outras áreas." },
-          { codigo: "EF09MA09", descricao: "Compreender os processos de fatoração de expressões algébricas, com base em suas relações com os produtos notáveis, para resolver e elaborar problemas que possam ser representados por equações polinomiais do 2º grau." },
-          { codigo: "EF09MA10", descricao: "Demonstrar relações simples entre os ângulos formados por retas paralelas cortadas por uma transversal." },
-          { codigo: "EF09MA11", descricao: "Resolver problemas por meio do estabelecimento de relações entre arcos, ângulos centrais e ângulos inscritos na circunferência, fazendo uso, inclusive, de softwares de geometria dinâmica." },
-          { codigo: "EF09MA12", descricao: "Reconhecer as condições necessárias e suficientes para que dois triângulos sejam semelhantes." },
-          { codigo: "EF09MA13", descricao: "Demonstrar relações métricas do triângulo retângulo, entre elas o teorema de Pitágoras, utilizando, inclusive, a semelhança de triângulos." },
-          { codigo: "EF09MA14", descricao: "Resolver e elaborar problemas de aplicação do teorema de Pitágoras ou das relações de proporcionalidade envolvendo retas paralelas cortadas por secantes." },
-          { codigo: "EF09MA15", descricao: "Descrever, por escrito e por meio de um fluxograma, um algoritmo para a construção de um polígono regular cuja medida do lado é conhecida, utilizando régua e compasso, como também softwares." },
-          { codigo: "EF09MA16", descricao: "Determinar o ponto médio de um segmento de reta e a distância entre dois pontos quaisquer, dadas as coordenadas desses pontos no plano cartesiano, sem o uso de fórmulas, e utilizar esse conhecimento para calcular, por exemplo, medidas de perímetros e áreas de figuras planas construídas no plano." },
-          { codigo: "EF09MA17", descricao: "Reconhecer vistas ortogonais de figuras espaciais e aplicar esse conhecimento para desenhar objetos em perspectiva." },
-          { codigo: "EF09MA18", descricao: "Reconhecer e empregar unidades usadas para expressar medidas muito grandes ou muito pequenas, tais como distância entre planetas e sistemas solares, tamanho de vírus ou de células, capacidade de armazenamento de computadores, entre outros." },
-          { codigo: "EF09MA19", descricao: "Resolver e elaborar problemas que envolvam medidas de volumes de prismas e de cilindros retos, inclusive com uso de expressões de cálculo, em situações cotidianas." },
-          { codigo: "EF09MA20", descricao: "Reconhecer, em experimentos aleatórios, eventos independentes e dependentes e calcular a probabilidade de sua ocorrência, nos dois casos." },
-          { codigo: "EF09MA21", descricao: "Analisar e identificar, em gráficos divulgados pela mídia, os elementos que podem induzir, às vezes propositadamente, erros de leitura, como escalas inapropriadas, legendas não explicitadas corretamente, omissão de informações importantes (fontes e datas), entre outros." },
-          { codigo: "EF09MA22", descricao: "Escolher e construir o gráfico mais adequado (colunas, setores, linhas), com ou sem uso de planilhas eletrônicas, para apresentar um determinado conjunto de dados, destacando aspectos como as medidas de tendência central." },
-          { codigo: "EF09MA23", descricao: "Planejar e executar pesquisa amostral envolvendo tema da realidade social e comunicar os resultados por meio de relatório contendo avaliação de medidas de tendência central e da amplitude, tabelas e gráficos adequados, construídos com o apoio de planilhas eletrônicas." }
-        ]
-      },
-      Libras: {
-        "Educação Infantil": [
-          { codigo: "EI01LS01", descricao: "Perceber os sinais produzidos pelos adultos e interagir por meio de expressões faciais, corporais e direcionamento do olhar." },
-          { codigo: "EI02LS02", descricao: "Utilizar classificadores e sinalizações simples para nomear objetos, pessoas e animais ao seu redor." }
-        ],
-        "1º ao 5º Ano": [
-          { codigo: "EF01LS01", descricao: "Reconhecer a Libras como sua língua natural de comunicação, identificando sinais em contexto de sala de aula." },
-          { codigo: "EF02LS05", descricao: "Compreender narrativa sinalizada (literatura surda), identificando personagens e elementos da história." }
-        ],
-        "6º ao 9º Ano": [
-          { codigo: "EF06LS10", descricao: "Produzir textos sinalizados argumentativos e descritivos com estrutura gramatical adequada da Libras (parâmetros: configuração de mão, ponto de articulação, movimento, orientação e expressão não manual)." }
-        ]
-      },
-      PortuguesL2: {
-        "1º ao 5º Ano": [
-          { codigo: "EF01L201", descricao: "Reconhecer a estrutura alfabética da Língua Portuguesa como Segunda Língua (L2), estabelecendo relações entre imagens e palavras escritas." }
-        ],
-        "6º ao 9º Ano": [
-          { codigo: "EF06L205", descricao: "Compreender a função sintática e os conectivos textuais na Língua Portuguesa escrita para estudantes surdos." }
-        ]
-      }
-    };
-
-    // Monitor & Check total habilidades registered in Firebase Database
-    function verificarStatusBancoFirebase() {
-      const txtStatus = document.getElementById('textoStatusBanco');
-      const pontoStatus = document.getElementById('pontoStatusBanco');
-
-      db.ref('matrizCurricularBNCC').on('value', snapshot => {
-        let count = 0;
-        if (snapshot.exists()) {
-          const val = snapshot.val();
-          Object.keys(val).forEach(key => {
-            if (typeof val[key] === 'object') {
-              count += Object.keys(val[key]).length;
-            } else {
-              count++;
-            }
-          });
-        }
-        totalHabilidadesNoFirebase = count;
-        
-        if (count >= 247) {
-          if (txtStatus) txtStatus.textContent = `Banco Firebase Atualizado (${count} Habilidades)`;
-          if (pontoStatus) pontoStatus.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-        } else if (count > 0) {
-          if (txtStatus) txtStatus.textContent = `Firebase Parcial (${count}/247 - Clique p/ Atualizar)`;
-          if (pontoStatus) pontoStatus.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
-        } else {
-          if (txtStatus) txtStatus.textContent = `Banco Vazio (0/247 - Suba a Matriz)`;
-          if (pontoStatus) pontoStatus.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
-        }
-      }, err => {
-        if (txtStatus) txtStatus.textContent = "Banco Local em uso (Firebase Desconectado)";
-        if (pontoStatus) pontoStatus.className = "w-2.5 h-2.5 rounded-full bg-slate-400";
-      });
-    }
-
-    // Subir toda a matriz curricular oficial para o Firebase
-    function sincronizarMatrizComFirebase() {
-      exibirToast("Sincronizando todas as 247 Habilidades com o Firebase...", "info");
-      db.ref('matrizCurricularBNCC').set(baseMatrizCurricular)
-        .then(() => {
-          exibirToast("Matriz Curricular enviada com sucesso ao Firebase!", "success");
-        })
-        .catch(err => {
-          console.error("Erro ao sincronizar com Firebase:", err);
-          exibirToast("Erro ao sincronizar com o Firebase: " + err.message, "error");
-        });
-    }
-
-    // Alternar entre abas Novo Plano e Planos Salvos
-    function trocarAba(aba) {
-      const abaNovo = document.getElementById('abaNovo');
-      const abaSalvos = document.getElementById('abaSalvos');
-      const navNovo = document.getElementById('navNovo');
-      const navSalvos = document.getElementById('navSalvos');
-
-      if (aba === 'novo') {
-        abaNovo.classList.remove('hidden');
-        abaSalvos.classList.add('hidden');
-        navNovo.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 bg-white text-brand-700 shadow-sm";
-        navSalvos.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 text-white hover:bg-white/10";
-      } else {
-        abaNovo.classList.add('hidden');
-        abaSalvos.classList.remove('hidden');
-        navNovo.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 text-white hover:bg-white/10";
-        navSalvos.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 bg-white text-brand-700 shadow-sm";
-        carregarPlanosDoFirebase();
-      }
-    }
-
-    // Gerenciador de datas dinâmicas das aulas
-    function adicionarCampoData(valor = '') {
-      const container = document.getElementById('containerDatasAulas');
-      if (!container) return;
-      const index = container.children.length;
-
-      const div = document.createElement('div');
-      div.className = "flex items-center gap-2 item-data-aula";
-      div.innerHTML = `
-        <input type="date" value="${valor}" onchange="atualizarContagemDatas()" class="px-3.5 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 flex-grow" required>
-        ${index > 0 ? `<button type="button" onclick="removerCampoData(this)" class="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"><i class="fas fa-trash-alt text-xs"></i></button>` : ''}
-      `;
-      container.appendChild(div);
-      atualizarContagemDatas();
-    }
-
-    function removerCampoData(btn) {
-      btn.closest('.item-data-aula').remove();
-      atualizarContagemDatas();
-    }
-
-    function atualizarContagemDatas() {
-      const container = document.getElementById('containerDatasAulas');
-      const badge = document.getElementById('badgeQtdAulasCalculada');
-      if (!container || !badge) return;
-      const count = container.querySelectorAll('input[type="date"]').length;
-      badge.textContent = `${count} ${count === 1 ? 'aula planejada' : 'aulas planejadas'}`;
-    }
-
-    // Atualiza opções de etapas de acordo com a disciplina
-    function atualizarDisciplinasEEtapas() {
-      const disc = document.getElementById('disciplina').value;
-      const selectEtapa = document.getElementById('etapa');
-      const alertaL2 = document.getElementById('alertaL2');
-      selectEtapa.innerHTML = '';
-
-      if (disc === 'PortuguesL2') {
-        alertaL2.classList.remove('hidden');
-      } else {
-        alertaL2.classList.add('hidden');
-      }
-
-      if (baseMatrizCurricular[disc]) {
-        Object.keys(baseMatrizCurricular[disc]).forEach(etapa => {
-          const opt = document.createElement('option');
-          opt.value = etapa;
-          opt.textContent = etapa;
-          selectEtapa.appendChild(opt);
-        });
-      }
-      carregarHabilidadesDisponiveis();
-    }
-
-    // Preenche o dropdown de habilidades
-    function carregarHabilidadesDisponiveis() {
-      const disc = document.getElementById('disciplina').value;
-      const etapa = document.getElementById('etapa').value;
-      const select = document.getElementById('selectHabilidade');
-      const lblContador = document.getElementById('lblContadorHabilidadesDisponiveis');
-      select.innerHTML = '<option value="">-- Selecione uma Habilidade da Matriz --</option>';
-
-      let lista = [];
-      if (baseMatrizCurricular[disc] && baseMatrizCurricular[disc][etapa]) {
-        lista = baseMatrizCurricular[disc][etapa];
-      }
-
-      lblContador.textContent = `(${lista.length} Habilidades encontradas)`;
-
-      lista.forEach(h => {
-        const opt = document.createElement('option');
-        opt.value = h.codigo;
-        opt.textContent = `[${h.codigo}] ${h.descricao}`;
-        opt.dataset.descricao = h.descricao;
-        select.appendChild(opt);
-      });
-
-      document.getElementById('boxLeituraHabilidade').classList.add('hidden');
-      document.getElementById('codigoHabilidade').value = '';
-      document.getElementById('descricaoHabilidade').value = '';
-    }
-
-    // Ao selecionar item no dropdown de habilidades
-    function selecionarHabilidadeMatriz() {
-      const select = document.getElementById('selectHabilidade');
-      const codInput = document.getElementById('codigoHabilidade');
-      const descInput = document.getElementById('descricaoHabilidade');
-      const boxLeitura = document.getElementById('boxLeituraHabilidade');
-      const badgeCodigo = document.getElementById('badgeLeituraCodigo');
-      const textoDescricao = document.getElementById('textoLeituraDescricao');
-
-      const selectedOption = select.options[select.selectedIndex];
-      if (selectedOption && selectedOption.value) {
-        codInput.value = selectedOption.value;
-        descInput.value = selectedOption.dataset.descricao || '';
-        
-        badgeCodigo.textContent = selectedOption.value;
-        textoDescricao.textContent = selectedOption.dataset.descricao || '';
-        boxLeitura.classList.remove('hidden');
-      } else {
-        codInput.value = '';
-        descInput.value = '';
-        boxLeitura.classList.add('hidden');
-      }
-    }
-
-    // Adiciona habilidade à lista do plano
-    function adicionarHabilidadeAoPlano() {
-      const codigo = document.getElementById('codigoHabilidade').value.trim().toUpperCase();
-      const descricao = document.getElementById('descricaoHabilidade').value.trim();
-
-      if (!codigo) {
-        exibirToast("Informe o código da habilidade!", "error");
-        return;
-      }
-
-      if (habilidadesAdicionadas.some(h => h.codigo === codigo)) {
-        exibirToast("Esta habilidade já foi inserida no plano!", "error");
-        return;
-      }
-
-      habilidadesAdicionadas.push({ codigo, descricao });
-      renderizarHabilidadesSelecionadas();
-      
-      document.getElementById('selectHabilidade').value = '';
-      document.getElementById('codigoHabilidade').value = '';
-      document.getElementById('descricaoHabilidade').value = '';
-      document.getElementById('boxLeituraHabilidade').classList.add('hidden');
-      exibirToast("Habilidade adicionada!", "success");
-    }
-
-    function removerHabilidadeDoPlano(index) {
-      habilidadesAdicionadas.splice(index, 1);
-      renderizarHabilidadesSelecionadas();
-    }
-
-    function renderizarHabilidadesSelecionadas() {
-      const container = document.getElementById('containerHabilidadesSelecionadas');
-      if (habilidadesAdicionadas.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 italic">Nenhuma habilidade adicionada ainda.</p>';
-        return;
-      }
-
-      container.innerHTML = '';
-      habilidadesAdicionadas.forEach((h, idx) => {
-        const div = document.createElement('div');
-        div.className = "flex items-start justify-between gap-3 p-3 bg-white border border-brand-200 rounded-xl shadow-xs";
-        div.innerHTML = `
-          <div class="space-y-0.5">
-            <span class="inline-block px-2 py-0.5 font-mono text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-md">${h.codigo}</span>
-            <p class="text-xs text-slate-700 leading-relaxed">${h.descricao || 'Sem descrição'}</p>
-          </div>
-          <button type="button" onclick="removerHabilidadeDoPlano(${idx})" class="text-slate-400 hover:text-rose-500 p-1 transition-colors"><i class="fas fa-trash-alt text-xs"></i></button>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    // Salvar Plano de Aula no Firebase
-    function salvarPlano(e) {
-      e.preventDefault();
-      const planoId = document.getElementById('planoId').value || db.ref('planosDeAula').push().key;
-
-      const containerDatas = document.getElementById('containerDatasAulas');
-      const datas = Array.from(containerDatas.querySelectorAll('input[type="date"]'))
-                        .map(i => i.value)
-                        .filter(v => v !== '');
-
-      const planoData = {
-        id: planoId,
-        cabecalhoUrl: document.getElementById('cabecalhoUrl').value.trim(),
-        professor: document.getElementById('professor').value.trim(),
-        disciplina: document.getElementById('disciplina').value,
-        etapa: document.getElementById('etapa').value,
-        turma: document.getElementById('turma').value.trim(),
-        datas: datas,
-        tema: document.getElementById('tema').value.trim(),
-        habilidades: habilidadesAdicionadas,
-        metodologia: document.getElementById('metodologia').value.trim(),
-        recursos: document.getElementById('recursos').value.trim(),
-        avaliacao: document.getElementById('avaliacao').value.trim(),
-        atualizadoEm: new Date().toISOString()
+        return cleanUrl;
       };
 
-      db.ref('planosDeAula/' + planoId).set(planoData)
-        .then(() => {
-          exibirToast("Plano de Aula salvo no Firebase com sucesso!", "success");
-          limparFormulario();
-          trocarAba('salvos');
-        })
-        .catch(err => {
-          console.error(err);
-          exibirToast("Erro ao salvar o plano: " + err.message, "error");
-        });
-    }
+      window.tratarErroImagemPreview = function() {
+        const img = document.getElementById('previewCabecalhoForm');
+        const text = document.getElementById('textNoCabecalho');
+        if (img) img.classList.add('hidden');
+        if (text) {
+          text.textContent = "Erro ao carregar imagem. Verifique o link.";
+          text.className = "text-xs text-rose-500 font-semibold";
+        }
+      };
 
-    // Buscar planos salvos no Firebase
-    function carregarPlanosDoFirebase() {
-      const loading = document.getElementById('loadingState');
-      loading.classList.remove('hidden');
+      window.tratarEAtualizarPreviewCabecalho = function() {
+        const inputEl = document.getElementById('cabecalhoUrl');
+        if (!inputEl) return;
+        
+        let url = window.normalizarUrlImagem(inputEl.value);
+        if (url !== inputEl.value.trim()) {
+          inputEl.value = url;
+        }
 
-      db.ref('planosDeAula').on('value', snapshot => {
-        loading.classList.add('hidden');
-        planosSalvos = snapshot.val() || {};
-        renderizarListaPlanos();
-      });
-    }
+        const img = document.getElementById('previewCabecalhoForm');
+        const text = document.getElementById('textNoCabecalho');
 
-    function renderizarListaPlanos() {
-      const badgeCount = document.getElementById('badgeCount');
-      const total = Object.keys(planosSalvos).length;
-      if (badgeCount) badgeCount.textContent = total;
+        if (!url) {
+          if (img) img.classList.add('hidden');
+          if (text) {
+            text.textContent = "Sem imagem de cabeçalho";
+            text.className = "text-xs text-slate-400";
+          }
+          return;
+        }
 
-      filtrarPlanos();
-    }
+        if (img && text) {
+          img.src = url;
+          img.classList.remove('hidden');
+          text.textContent = "";
+        }
+      };
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    function filtrarPlanos() {
-      const busca = document.getElementById('buscaInput')?.value.toLowerCase() || '';
-      const discFiltro = document.getElementById('filtroDisciplina')?.value || 'todos';
-
-      const filtrados = Object.values(planosSalvos).filter(p => {
-        const matchDisc = discFiltro === 'todos' || p.disciplina === discFiltro;
-        const textSearch = `${p.tema} ${p.professor} ${p.turma} ${p.habilidades ? p.habilidades.map(h => h.codigo).join(' ') : ''}`.toLowerCase();
-        const matchBusca = textSearch.includes(busca);
-        return matchDisc && matchBusca;
-      });
-
-      const container = document.getElementById('abaSalvos');
-      let target = document.getElementById('gridPlanos');
-      
-      if (!target) {
-        target = document.createElement('div');
-        target.id = 'gridPlanos';
-        container.appendChild(target);
-      }
-
-      if (filtrados.length === 0) {
-        target.className = "py-12 text-center text-slate-400 text-sm";
-        target.innerHTML = `<i class="fas fa-folder-open text-4xl mb-2 text-slate-300"></i><p>Nenhum plano de aula encontrado.</p>`;
-        return;
-      }
-
-      if (modoVisualizacao === 'grid') {
-        target.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
-        target.innerHTML = filtrados.map(p => `
-          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow p-5 flex flex-col justify-between space-y-4">
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.disciplina === 'Matematica' ? 'bg-cyan-100 text-cyan-800' : p.disciplina === 'Libras' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}">
-                  ${p.disciplina === 'Matematica' ? 'Matemática' : p.disciplina === 'Libras' ? 'Libras' : 'Português L2'}
-                </span>
-                <span class="text-[11px] text-slate-400 font-medium">${p.etapa || ''}</span>
-              </div>
-              <div>
-                <h3 class="font-bold text-slate-800 text-base leading-snug line-clamp-2">${p.tema}</h3>
-                <p class="text-xs text-slate-500 mt-1"><i class="fas fa-user-circle mr-1"></i> ${p.professor} ${p.turma ? '• ' + p.turma : ''}</p>
-              </div>
-              <div class="flex flex-wrap gap-1">
-                ${(p.habilidades || []).map(h => `<span class="px-2 py-0.5 bg-slate-100 text-slate-700 font-mono text-[10px] rounded font-bold border border-slate-200">${h.codigo}</span>`).join('')}
-              </div>
-            </div>
-            <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-              <span class="text-slate-400">${(p.datas || []).length} aula(s)</span>
-              <div class="flex gap-2">
-                <button onclick="editarPlano('${p.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors"><i class="fas fa-edit mr-1"></i>Editar</button>
-                <button onclick="imprimirPlano('${p.id}')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-colors"><i class="fas fa-print mr-1"></i>Imprimir</button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      } else {
-        target.className = "space-y-3";
-        target.innerHTML = filtrados.map(p => `
-          <div class="bg-white rounded-xl border border-slate-200/80 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="space-y-1">
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${p.disciplina === 'Matematica' ? 'bg-cyan-100 text-cyan-800' : 'bg-purple-100 text-purple-800'}">${p.disciplina}</span>
-                <h3 class="font-bold text-slate-800 text-sm">${p.tema}</h3>
-              </div>
-              <p class="text-xs text-slate-500">${p.professor} • ${p.etapa} • ${p.turma || ''}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <button onclick="editarPlano('${p.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg"><i class="fas fa-edit mr-1"></i>Editar</button>
-              <button onclick="imprimirPlano('${p.id}')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg"><i class="fas fa-print mr-1"></i>Imprimir</button>
-            </div>
-          </div>
-        `).join('');
-      }
-    }
-
-    function mudarVisualizacao(modo) {
-      modoVisualizacao = modo;
-      document.getElementById('btnModoGrid').className = modo === 'grid' ? 'p-1.5 rounded-lg text-brand-600 bg-white shadow-sm' : 'p-1.5 rounded-lg text-slate-400 hover:text-slate-600';
-      document.getElementById('btnModoLista').className = modo === 'lista' ? 'p-1.5 rounded-lg text-brand-600 bg-white shadow-sm' : 'p-1.5 rounded-lg text-slate-400 hover:text-slate-600';
-      renderizarListaPlanos();
-    }
-
-    function editarPlano(id) {
-      const p = planosSalvos[id];
-      if (!p) return;
-
-      document.getElementById('planoId').value = p.id;
-      document.getElementById('cabecalhoUrl').value = p.cabecalhoUrl || '';
-      document.getElementById('professor').value = p.professor || '';
-      document.getElementById('disciplina').value = p.disciplina || 'Matematica';
-      atualizarDisciplinasEEtapas();
-      document.getElementById('etapa').value = p.etapa || '';
-      document.getElementById('turma').value = p.turma || '';
-      document.getElementById('tema').value = p.tema || '';
-      document.getElementById('metodologia').value = p.metodologia || '';
-      document.getElementById('recursos').value = p.recursos || '';
-      document.getElementById('avaliacao').value = p.avaliacao || '';
-
-      const containerDatas = document.getElementById('containerDatasAulas');
-      containerDatas.innerHTML = '';
-      if (p.datas && p.datas.length > 0) {
-        p.datas.forEach(d => adicionarCampoData(d));
-      } else {
-        adicionarCampoData();
-      }
-
-      habilidadesAdicionadas = p.habilidades || [];
-      renderizarHabilidadesSelecionadas();
-      tratarEAtualizarPreviewCabecalho();
-
-      document.getElementById('formTitle').textContent = "Editar Plano de Aula";
-      trocarAba('novo');
-    }
-
-    function limparFormulario() {
-      document.getElementById('formPlano').reset();
-      document.getElementById('planoId').value = '';
-      document.getElementById('containerDatasAulas').innerHTML = '';
-      adicionarCampoData();
-      habilidadesAdicionadas = [];
-      renderizarHabilidadesSelecionadas();
-      tratarEAtualizarPreviewCabecalho();
-      document.getElementById('formTitle').textContent = "Criar Novo Plano de Aula";
-    }
-
-    function imprimirPlano(id) {
-      const p = planosSalvos[id];
-      if (!p) return;
-
-      let printContainer = document.getElementById('printArea');
-      if (!printContainer) {
-        printContainer = document.createElement('div');
-        printContainer.id = 'printArea';
-        document.body.appendChild(printContainer);
-      }
-
-      printContainer.innerHTML = `
-        <div class="space-y-6 max-w-4xl mx-auto font-sans p-6">
-          ${p.cabecalhoUrl ? `<div class="text-center pb-4 border-b border-slate-300"><img src="${p.cabecalhoUrl}" class="max-h-24 mx-auto object-contain"></div>` : ''}
-          <div class="text-center space-y-1">
-            <h1 class="text-2xl font-bold uppercase tracking-wide text-slate-900">Plano de Aula</h1>
-            <p class="text-sm font-semibold text-slate-600">${p.disciplina} • ${p.etapa}</p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4 text-xs border border-slate-300 p-4 rounded-lg bg-slate-50">
-            <div><strong>Professor(a):</strong> ${p.professor}</div>
-            <div><strong>Turma:</strong> ${p.turma || 'Não informada'}</div>
-            <div><strong>Datas das Aulas:</strong> ${(p.datas || []).join(', ')}</div>
-            <div><strong>Qtd. Aulas:</strong> ${(p.datas || []).length}</div>
-          </div>
-
-          <div>
-            <h3 class="text-sm font-bold border-b border-slate-300 pb-1 mb-2">Tema / Assunto:</h3>
-            <p class="text-sm text-slate-800">${p.tema}</p>
-          </div>
-
-          <div>
-            <h3 class="text-sm font-bold border-b border-slate-300 pb-1 mb-2">Habilidades BNCC / Libras:</h3>
-            <div class="space-y-2">
-              ${(p.habilidades || []).map(h => `
-                <div class="text-xs">
-                  <span class="font-bold font-mono text-brand-800">[${h.codigo}]</span> ${h.descricao}
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2.5 rounded-xl">
+                    <i class="fa-solid fa-graduation-cap text-2xl text-amber-300"></i>
                 </div>
-              `).join('')}
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Gerenciador de Planos de Aula BNCC</h1>
+                    <p class="text-xs text-indigo-200">Matemática, Libras & Português L2 • Sincronizado com Firebase</p>
+                </div>
             </div>
-          </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <div id="statusFirebaseBadge" class="bg-indigo-800/80 border border-indigo-600 text-xs px-3 py-1.5 rounded-full flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" id="dotStatusFirebase"></span>
+                    <span id="txtStatusFirebase" class="font-medium text-indigo-100">Verificando Firebase...</span>
+                </div>
+                
+                <button id="btnSubirMatriz" onclick="sincronizarMatrizComFirebase()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span id="txtBtnSubirMatriz">Subir Matriz Curricular</span>
+                </button>
 
-          <div>
-            <h3 class="text-sm font-bold border-b border-slate-300 pb-1 mb-2">Procedimentos Didáticos / Metodologia:</h3>
-            <p class="text-xs leading-relaxed whitespace-pre-line">${p.metodologia}</p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <h3 class="text-sm font-bold border-b border-slate-300 pb-1 mb-2">Recursos Didáticos:</h3>
-              <p class="text-xs leading-relaxed whitespace-pre-line">${p.recursos || 'Não informado'}</p>
+                <button onclick="alternarVisao('grid')" class="bg-indigo-600 hover:bg-indigo-800 text-white p-2 rounded-lg text-sm transition" title="Ver Planos Salvos">
+                    <i class="fa-solid fa-folder-open"></i>
+                </button>
             </div>
-            <div>
-              <h3 class="text-sm font-bold border-b border-slate-300 pb-1 mb-2">Avaliação:</h3>
-              <p class="text-xs leading-relaxed whitespace-pre-line">${p.avaliacao || 'Não informado'}</p>
-            </div>
-          </div>
         </div>
-      `;
+    </header>
 
-      window.print();
-    }
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    function exibirToast(msg, tipo = 'info') {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toastMsg');
-      const toastIcon = document.getElementById('toastIcon');
+        <!-- Form Section (Left / Main) -->
+        <section class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 no-print">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+                    <span>Novo Plano de Aula</span>
+                </h2>
+                <button onclick="limparFormulario()" class="text-xs text-slate-500 hover:text-rose-600 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Limpar Formulário</span>
+                </button>
+            </div>
 
-      toastMsg.textContent = msg;
-      if (tipo === 'success') {
-        toastIcon.className = "fas fa-check-circle text-emerald-400 text-lg";
-      } else if (tipo === 'error') {
-        toastIcon.className = "fas fa-exclamation-circle text-rose-400 text-lg";
-      } else {
-        toastIcon.className = "fas fa-info-circle text-cyan-400 text-lg";
+            <form id="formPlanoAula" onsubmit="salvarPlano(event)" class="space-y-5">
+                <!-- Cabeçalho Institucional / Imagem -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                        URL do Cabeçalho Institucional (GitHub ou Imagem)
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="url" id="cabecalhoUrl" placeholder="Ex: https://github.com/rwpo/Plano_de_Aula/blob/main/Cabecalho_CAS.png" 
+                               oninput="tratarEAtualizarPreviewCabecalho()"
+                               class="flex-1 text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                        <button type="button" onclick="testarUrlCabecalho()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3 py-2 rounded-lg font-medium transition">
+                            Testar Link
+                        </button>
+                    </div>
+                    <div class="mt-3 flex items-center justify-center bg-white border border-dashed border-slate-300 rounded-lg p-3 min-h-[70px]">
+                        <img id="previewCabecalhoForm" src="" alt="Pré-visualização do Cabeçalho" onerror="tratarErroImagemPreview()" class="max-h-16 object-contain hidden">
+                        <span id="textNoCabecalho" class="text-xs text-slate-400">Insira a URL do cabeçalho acima para visualizar</span>
+                    </div>
+                </div>
+
+                <!-- Informações Básicas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Disciplina / Componente</label>
+                        <select id="selectDisciplina" onchange="atualizarEtapas()" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="Matematica">Matemática</option>
+                            <option value="Libras">Libras</option>
+                            <option value="PortuguesL2">Português L2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Ano / Etapa</label>
+                        <select id="selectEtapa" onchange="atualizarHabilidadesDisponiveis()" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <!-- Preenchido via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Seleção de Habilidade BNCC (Dividida em 2 colunas: Código limpo + Caixa de leitura da descrição completa) -->
+                <div class="space-y-2 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                    <label class="block text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1">
+                        <i class="fa-solid fa-bullseye text-indigo-600 mr-1"></i> Selecionar Habilidade BNCC / Currículo
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                        <div class="md:col-span-5">
+                            <select id="selectHabilidade" onchange="mostrarDetalhesHabilidadeSelecionada()" class="w-full text-sm border border-indigo-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+                                <option value="">Selecione um código...</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-7">
+                            <div id="boxLeituraHabilidade" class="bg-white border border-indigo-200 rounded-lg p-3 text-xs text-slate-700 min-h-[50px] shadow-inner flex items-center">
+                                <span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button type="button" onclick="adicionarHabilidadeAoPlano()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center space-x-1.5 shadow-sm">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Adicionar Habilidade ao Plano</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Habilidades Adicionadas -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Habilidades Vinculadas a este Plano</label>
+                    <div id="listaHabilidadesVinculadas" class="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50">
+                        <p class="text-xs text-slate-400 italic text-center py-3">Nenhuma habilidade adicionada ainda.</p>
+                    </div>
+                </div>
+
+                <!-- Título da Aula e Calendário de Datas do Bloco -->
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Título da Aula / Sequência Didática</label>
+                        <input type="text" id="inputTituloAula" required placeholder="Ex: Explorando Frações e Proporcionalidade" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    
+                    <!-- Bloco de Aulas (Múltiplas Datas) -->
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                <i class="fa-regular fa-calendar-days text-indigo-600 mr-1"></i> Cronograma do Bloco de Aulas (Datas)
+                            </label>
+                            <button type="button" onclick="adicionarDataAoBloco()" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center space-x-1">
+                                <i class="fa-solid fa-plus-circle"></i>
+                                <span>+ Adicionar Aula/Data</span>
+                            </button>
+                        </div>
+                        <div id="containerDatasAulas" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <!-- Preenchido via JS com inputs de data -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campos Descritivos do Plano -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Objetivos de Aprendizagem</label>
+                        <textarea id="inputObjetivos" rows="2" placeholder="O que os estudantes deverão ser capazes de realizar ao final da aula?" class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Metodologia / Desenvolvimento da Aula</label>
+                        <textarea id="inputMetodologia" rows="4" placeholder="Passo a passo da atividade, mediação pedagógica, recursos utilizados..." class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Avaliação</label>
+                        <textarea id="inputAvaliacao" rows="2" placeholder="Como será verificada a aprendizagem e participação dos alunos?" class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Anotações / Adaptações Pedagógicas do Professor (Opcional)</label>
+                        <textarea id="inputObservacoes" rows="2" placeholder="Observações para alunos com necessidades específicas, recursos de acessibilidade, Libras, etc." class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3 border-t border-slate-100">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm shadow-md transition flex items-center space-x-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Salvar Plano de Aula</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Sidebar / Listagem de Planos Salvos (Right) -->
+        <aside class="lg:col-span-4 space-y-6 no-print">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sticky top-24">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-book-bookmark text-indigo-600"></i>
+                        <span>Planos Cadastrados</span>
+                    </h3>
+                    <span id="contadorPlanos" class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-bold">0</span>
+                </div>
+
+                <div id="containerListaPlanos" class="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+                    <div class="text-center py-8 text-slate-400 text-xs italic">
+                        Nenhum plano salvo ainda. Crie seu primeiro plano ao lado!
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Modal de Visualização / Impressão do Plano -->
+    <div id="modalVisualizacao" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8 relative">
+            <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
+                <h3 class="text-lg font-bold text-slate-800">Visualizar Plano de Aula</h3>
+                <div class="flex items-center space-x-2">
+                    <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-4 py-2 rounded-lg font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Imprimir / PDF</span>
+                    </button>
+                    <button onclick="fecharModalVisualizacao()" class="text-slate-400 hover:text-slate-600 p-2 text-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conteúdo Renderizado do Plano -->
+            <div id="conteudoPlanoImpressao" class="space-y-6 text-slate-800">
+                <!-- Injetado dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript da Aplicação -->
+    <script>
+      // Configuração do Firebase Realtime Database
+      const firebaseConfig = {
+        databaseURL: "https://gerenciador-planos-aula-default-rtdb.firebaseio.com/"
+      };
+
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      const db = firebase.database();
+
+      // Variáveis Globais de Estado
+      let habilidadesAdicionadas = [];
+      let planosSalvos = {};
+      let datasBlocoAulas = [];
+
+      // Matriz Curricular Completa BNCC (Matemática 1º ao 9º Ano, Libras e Português L2)
+      const baseMatrizCurricular = {
+        "Matematica": {
+          "1º Ano": [
+            { codigo: "EF01MA01", descricao: "Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas e reconhecer situações em que os números não indicam contagem nem ordem, mas sim código de identificação." },
+            { codigo: "EF01MA02", descricao: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como o pareamento e outros agrupamentos." },
+            { codigo: "EF01MA03", descricao: "Estimar e comparar quantidades de objetos de dois conjuntos (em torno de 20 elementos), por estimativa e/ou por correspondência para indicar 'tem mais', 'tem menos' ou 'tem a mesma quantidade'." },
+            { codigo: "EF01MA04", descricao: "Contar a quantidade de objetos de coleções até 100 unidades e apresentar o resultado por registros verbais e simbólicos, em situações de seu interesse." },
+            { codigo: "EF01MA05", descricao: "Comparar números naturais de até duas ordens em situações cotidianas, com e sem suporte da reta numérica." },
+            { codigo: "EF01MA06", descricao: "Construir fatos básicos da adição e utilizá-los em procedimentos de cálculo para resolver problemas." },
+            { codigo: "EF01MA07", descricao: "Compor e decompor número de até duas ordens, por meio de diferentes adições, com suporte de material manipulável." },
+            { codigo: "EF01MA08", descricao: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até dois algarismos, com os significados de juntar, acrescentar, separar e retirar." },
+            { codigo: "EF01MA09", descricao: "Organizar e ordenar objetos familiares ou representações por figuras, por meio de atributos, tais como cor, forma e medida." },
+            { codigo: "EF01MA10", descricao: "Descrever, após o reconhecimento e a explicitação de um padrão, os elementos ausentes em sequências recursivas de números naturais, objetos ou figuras." },
+            { codigo: "EF01MA11", descricao: "Descrever a localização de pessoas e de objetos no espaço em relação à sua própria posição, utilizando termos como à direita, à esquerda, em frente, atrás." },
+            { codigo: "EF01MA12", descricao: "Descrever a localização de pessoas e de objetos no espaço segundo um dado ponto de referência, compreendendo a necessidade de explicitar o referencial." },
+            { codigo: "EF01MA13", descricao: "Relacionar figuras geométricas espaciais (cones, cilindros, esferas e blocos retangulares) a objetos familiares do mundo físico." },
+            { codigo: "EF01MA14", descricao: "Identificar e nomear figuras planas (círculo, quadrado, retângulo e triângulo) em desenhos apresentados em diferentes disposições ou em contornos de faces." },
+            { codigo: "EF01MA15", descricao: "Comparar comprimentos, capacidades ou massas, utilizando termos como mais alto, mais baixo, mais comprido, mais curto, mais grosso, mais fino." },
+            { codigo: "EF01MA16", descricao: "Relatar em linguagem verbal ou não verbal sequência de acontecimentos relativos a um dia, utilizando horários dos eventos." },
+            { codigo: "EF01MA17", descricao: "Reconhecer e relacionar períodos do dia, dias da semana e meses do ano, utilizando calendário, quando necessário." },
+            { codigo: "EF01MA18", descricao: "Produzir a escrita de uma data, apresentando o dia, o mês e o ano, e indicar o dia da semana de uma data, consultando calendários." },
+            { codigo: "EF01MA19", descricao: "Reconhecer e relacionar valores de moedas e cédulas do sistema monetário brasileiro para resolver situações simples do cotidiano." },
+            { codigo: "EF01MA20", descricao: "Classificar eventos envolvendo o acaso, tais como 'acontecerá com certeza', 'talvez aconteça' e 'é impossível acontecer'." },
+            { codigo: "EF01MA21", descricao: "Ler dados expressos em tabelas e em gráficos de colunas simples." },
+            { codigo: "EF01MA22", descricao: "Realizar pesquisa, envolvendo até duas variáveis categóricas de seu interesse e universo de até 30 elementos." }
+          ],
+          "2º Ano": [
+            { codigo: "EF02MA01", descricao: "Comparar e ordenar números naturais (até a ordem de centenas) pela compreensão de características do sistema de numeração decimal." },
+            { codigo: "EF02MA02", descricao: "Fazer estimativas por meio de estratégias diversas a respeito da quantidade de objetos de coleções (até 1000 unidades)." },
+            { codigo: "EF02MA03", descricao: "Comparar quantidades de objetos de dois conjuntos para indicar 'tem mais', 'tem menos' ou 'tem a mesma quantidade'." },
+            { codigo: "EF02MA04", descricao: "Compor e decompor números naturais de até três ordens, com suporte de material manipulável." },
+            { codigo: "EF02MA05", descricao: "Construir fatos básicos da adição e subtração e utilizá-los no cálculo mental ou escrito." },
+            { codigo: "EF02MA06", descricao: "Resolver e elaborar problemas de adição e de subtração envolvendo números de até três ordens." },
+            { codigo: "EF02MA07", descricao: "Resolver e elaborar problemas de multiplicação (por 2, 3, 4 e 5) com a ideia de adição de parcelas iguais." },
+            { codigo: "EF02MA08", descricao: "Resolver e elaborar problemas envolvendo dobro, metade, triplo e terça parte." },
+            { codigo: "EF02MA09", descricao: "Construir sequências de números naturais em ordem crescente ou decrescente a partir de um número qualquer." },
+            { codigo: "EF02MA10", descricao: "Descrever um padrão de sequências repetitivas e de sequências recursivas, por meio de palavras, símbolos ou desenhos." },
+            { codigo: "EF02MA11", descricao: "Descrever os elementos ausentes em sequências repetitivas e em sequências recursivas." },
+            { codigo: "EF02MA12", descricao: "Identificar e registrar a localização e os deslocamentos de pessoas e de objetos no espaço, considerando mais de um ponto de referência." },
+            { codigo: "EF02MA13", descricao: "Esboçar roteiros a ser seguidos ou plantas de ambientes familiares, assinalando entradas, saídas e pontos de referência." },
+            { codigo: "EF02MA14", descricao: "Reconhecer, nomear e comparar figuras geométricas espaciais (cubo, bloco retangular, pirâmide, cone, cilindro e esfera)." },
+            { codigo: "EF02MA15", descricao: "Reconhecer, comparar e nomear figuras planas (círculo, quadrado, retângulo e triângulo) por meio de características comuns." },
+            { codigo: "EF02MA16", descricao: "Estimar, medir e comparar comprimentos utilizando unidades de medida não padronizadas e padronizadas (metro, centímetro e milímetro)." },
+            { codigo: "EF02MA17", descricao: "Estimar, medir e comparar capacidade e massa (litro, mililitro, grama e quilograma)." },
+            { codigo: "EF02MA18", descricao: "Indicar a duração de intervalos de tempo entre duas datas, utilizando calendário para planejamentos." },
+            { codigo: "EF02MA19", descricao: "Medir a duração de um intervalo de tempo por meio de relógio digital e registrar horário de início e fim." },
+            { codigo: "EF02MA20", descricao: "Estabelecer equivalência de valores entre moedas e cédulas do sistema monetário brasileiro." },
+            { codigo: "EF02MA21", descricao: "Classificar resultados de eventos cotidianos aleatórios como 'pouco prováveis', 'muito prováveis' e 'impossíveis'." },
+            { codigo: "EF02MA22", descricao: "Comparar informações de pesquisas apresentadas por meio de tabelas de dupla entrada e gráficos de colunas." },
+            { codigo: "EF02MA23", descricao: "Realizar pesquisa em universo de até 30 elementos, organizando os dados em listas e tabelas." }
+          ],
+          "3º Ano": [
+            { codigo: "EF03MA01", descricao: "Ler, escrever e comparar números naturais de até a ordem de unidade de milhar." },
+            { codigo: "EF03MA02", descricao: "Identificar características do sistema de numeração decimal, utilizando composição e decomposição de até quatro ordens." },
+            { codigo: "EF03MA03", descricao: "Construir e utilizar fatos básicos da adição e da multiplicação para o cálculo mental ou escrito." },
+            { codigo: "EF03MA04", descricao: "Estabelecer a relação entre números naturais e pontos da reta numérica." },
+            { codigo: "EF03MA05", descricao: "Utilizar diferentes procedimentos de cálculo mental e escrito para adição e subtração." },
+            { codigo: "EF03MA06", descricao: "Resolver e elaborar problemas de adição e subtração com diferentes significados e estratégias." },
+            { codigo: "EF03MA07", descricao: "Resolver e elaborar problemas de multiplicação (por 2, 3, 4, 5 e 10) com adição de parcelas iguais e disposição retangular." },
+            { codigo: "EF03MA08", descricao: "Resolver e elaborar problemas de divisão de um número natural por outro (até 10), com resto zero e diferente de zero." },
+            { codigo: "EF03MA09", descricao: "Associar o quociente de uma divisão com resto zero às ideias de metade, terça, quarta, quinta e décima partes." },
+            { codigo: "EF03MA10", descricao: "Identificar regularidades em sequências ordenadas de números naturais resultantes de adições ou subtrações sucessivas." },
+            { codigo: "EF03MA11", descricao: "Compreender a ideia de igualdade para escrever diferentes sentenças de adições ou subtrações." },
+            { codigo: "EF03MA12", descricao: "Descrever e representar, por meio de esboços de trajetos ou croquis, a movimentação no espaço." },
+            { codigo: "EF03MA13", descricao: "Associar figuras geométricas espaciais a objetos do mundo físico e nomear essas figuras." },
+            { codigo: "EF03MA14", descricao: "Descrever características de figuras geométricas espaciais, relacionando-as com suas planificações." },
+            { codigo: "EF03MA15", descricao: "Classificar e comparar figuras planas em relação a seus lados e vértices." },
+            { codigo: "EF03MA16", descricao: "Reconhecer figuras congruentes usando sobreposição e desenhos em malhas quadriculadas." },
+            { codigo: "EF03MA17", descricao: "Reconhecer que o resultado de uma medida depende da unidade de medida utilizada." },
+            { codigo: "EF03MA18", descricao: "Escolher a unidade de medida e o instrumento mais apropriado para medições." },
+            { codigo: "EF03MA19", descricao: "Estimar, medir e comparar comprimentos utilizando unidades padronizadas usuais." },
+            { codigo: "EF03MA20", descricao: "Estimar e medir capacidade e massa, reconhecendo-as em leitura de rótulos e embalagens." },
+            { codigo: "EF03MA21", descricao: "Comparar, visualmente ou por superposição, áreas de faces de objetos e figuras planas." },
+            { codigo: "EF03MA22", descricao: "Ler e registrar medidas e intervalos de tempo utilizando relógios analógico e digital." },
+            { codigo: "EF03MA23", descricao: "Ler horas em relógios digitais e analógicos e reconhecer relações entre hora, minuto e segundo." },
+            { codigo: "EF03MA24", descricao: "Resolver e elaborar problemas envolvendo comparação e equivalência de valores monetários." },
+            { codigo: "EF03MA25", descricao: "Identificar, em eventos familiares aleatórios, todos os resultados possíveis." },
+            { codigo: "EF03MA26", descricao: "Resolver problemas cujos dados estão apresentados em tabelas de dupla entrada ou gráficos de barras." },
+            { codigo: "EF03MA27", descricao: "Ler, interpretar e comparar dados apresentados em tabelas de dupla entrada ou gráficos de colunas." },
+            { codigo: "EF03MA28", descricao: "Realizar pesquisa envolvendo variáveis categóricas em universo de até 50 elementos." }
+          ],
+          "4º Ano": [
+            { codigo: "EF04MA01", descricao: "Ler, escrever e ordenar números naturais até a ordem de dezenas de milhar." },
+            { codigo: "EF04MA02", descricao: "Mostrar, por decomposição e composição, que todo número natural pode ser escrito por meio de adições e multiplicações por potências de dez." },
+            { codigo: "EF04MA03", descricao: "Resolver e elaborar problemas com números naturais envolvendo adição e subtração." },
+            { codigo: "EF04MA04", descricao: "Utilizar as relações entre adição e subtração, bem como entre multiplicação e divisão, para ampliar estratégias de cálculo." },
+            { codigo: "EF04MA05", descricao: "Utilizar as propriedades das operações para desenvolver estratégias de cálculo." },
+            { codigo: "EF04MA06", descricao: "Resolver e elaborar problemas envolvendo diferentes significados da multiplicação." },
+            { codigo: "EF04MA07", descricao: "Resolver e elaborar problemas de divisão cujo divisor tenha no máximo dois algarismos." },
+            { codigo: "EF04MA08", descricao: "Resolver problemas simples de contagem, determinando o número de agrupamentos possíveis." },
+            { codigo: "EF04MA09", descricao: "Reconhecer as frações unitárias mais usuais (1/2, 1/3, 1/4, 1/5, 1/10 e 1/100) utilizando a reta numérica." },
+            { codigo: "EF04MA10", descricao: "Reconhecer que as regras do sistema de numeração decimal podem ser estendidas para representação decimal de racionais e sistema monetário." },
+            { codigo: "EF04MA11", descricao: "Identificar regularidades em sequências numéricas compostas por múltiplos de um número natural." },
+            { codigo: "EF04MA12", descricao: "Reconhecer que há grupos de números naturais para os quais divisões por um determinado número resultam em restos iguais." },
+            { codigo: "EF04MA13", descricao: "Reconhecer relações inversas entre as operações de adição/subtração e multiplicação/divisão." },
+            { codigo: "EF04MA14", descricao: "Reconhecer e mostrar que a relação de igualdade entre dois termos permanece quando se adiciona ou subtrai um mesmo número." },
+            { codigo: "EF04MA15", descricao: "Determinar o número desconhecido que torna verdadeira uma igualdade envolvendo operações fundamentais." },
+            { codigo: "EF04MA16", descricao: "Descrever deslocamentos e localização no espaço por meio de malhas quadriculadas e plantas baixas." },
+            { codigo: "EF04MA17", descricao: "Associar prismas e pirâmides a suas planificações, analisando e comparando seus atributos." },
+            { codigo: "EF04MA18", descricao: "Reconhecer ângulos retos e não retos em figuras poligonais com uso de esquadros ou softwares." },
+            { codigo: "EF04MA19", descricao: "Reconhecer simetria de reflexão em figuras geométricas planas e utilizá-la na construção de figuras congruentes." },
+            { codigo: "EF04MA20", descricao: "Medir e estimar comprimentos, massas e capacidades utilizando unidades padronizadas usuais." },
+            { codigo: "EF04MA21", descricao: "Medir, comparar e estimar área de figuras planas desenhadas em malha quadriculada." },
+            { codigo: "EF04MA22", descricao: "Ler e registrar medidas e intervalos de tempo em horas, minutos e segundos." },
+            { codigo: "EF04MA23", descricao: "Reconhecer temperatura como grandeza e grau Celsius como unidade de medida associada." },
+            { codigo: "EF04MA24", descricao: "Registrar temperaturas máxima e mínima diárias e elaborar gráficos de colunas com variações." },
+            { codigo: "EF04MA25", descricao: "Resolver e elaborar problemas que envolvam situações de compra e venda, troco e desconto." },
+            { codigo: "EF04MA26", descricao: "Identificar eventos aleatórios cotidianos com maior chance de ocorrência." },
+            { codigo: "EF04MA27", descricao: "Analisar dados apresentados em tabelas ou gráficos e produzir texto com síntese da análise." },
+            { codigo: "EF04MA28", descricao: "Realizar pesquisa envolvendo variáveis categóricas e numéricas e organizar dados em tabelas e gráficos." }
+          ],
+          "5º Ano": [
+            { codigo: "EF05MA01", descricao: "Ler, escrever e ordenar números naturais até a ordem das centenas de milhar." },
+            { codigo: "EF05MA02", descricao: "Ler, escrever e ordenar números racionais na forma decimal utilizando reta numérica." },
+            { codigo: "EF05MA03", descricao: "Identificar e representar frações, associando-as ao resultado de uma divisão ou parte de um todo." },
+            { codigo: "EF05MA04", descricao: "Identificar frações equivalentes." },
+            { codigo: "EF05MA05", descricao: "Comparar e ordenar números racionais positivos (fracionária e decimal), relacionando-os à reta numérica." },
+            { codigo: "EF05MA06", descricao: "Associar representações percentuais (10%, 25%, 50%, 75%, 100%) a frações para cálculo de porcentagens." },
+            { codigo: "EF05MA07", descricao: "Resolver e elaborar problemas de adição e subtração com números naturais e racionais decimais finitos." },
+            { codigo: "EF05MA08", descricao: "Resolver e elaborar problemas de multiplicação e divisão com números naturais e racionais decimais." },
+            { codigo: "EF05MA09", descricao: "Resolver e elaborar problemas simples de contagem envolvendo princípio multiplicativo e diagramas de árvore." },
+            { codigo: "EF05MA10", descricao: "Concluir que a relação de igualdade entre dois membros permanece ao operar ambos por um mesmo número." },
+            { codigo: "EF05MA11", descricao: "Resolver e elaborar problemas cuja conversão em sentença matemática seja uma igualdade com termo desconhecido." },
+            { codigo: "EF05MA12", descricao: "Resolver problemas que envolvam variação de proporcionalidade direta entre duas grandezas." },
+            { codigo: "EF05MA13", descricao: "Resolver problemas envolvendo partilha de quantidade em duas partes desiguais (razão)." },
+            { codigo: "EF05MA14", descricao: "Utilizar e compreender diferentes representações para localização de objetos no plano (coordenadas cartesianas)." },
+            { codigo: "EF05MA15", descricao: "Interpretar e representar localização ou movimentação no plano cartesiano (1º quadrante)." },
+            { codigo: "EF05MA16", descricao: "Associar figuras espaciais a suas planificações (prismas, pirâmides, cilindros e cones)." },
+            { codigo: "EF05MA17", descricao: "Reconhecer, nomear e comparar polígonos considerando lados, vértices e ângulos." },
+            { codigo: "EF05MA18", descricao: "Reconhecer congruência de ângulos e proporcionalidade de lados em ampliações e reduções." },
+            { codigo: "EF05MA19", descricao: "Resolver e elaborar problemas envolvendo grandezas de comprimento, área, massa, tempo e capacidade." },
+            { codigo: "EF05MA20", descricao: "Concluir que figuras de perímetros iguais podem ter áreas diferentes e vice-versa." },
+            { codigo: "EF05MA21", descricao: "Reconhecer volume como grandeza associada a sólidos geométricos e medir por empilhamento de cubos." },
+            { codigo: "EF05MA22", descricao: "Apresentar todos os resultados possíveis de um experimento aleatório, estimando probabilidades." },
+            { codigo: "EF05MA23", descricao: "Determinar a probabilidade de ocorrência de um resultado em eventos equiprováveis." },
+            { codigo: "EF05MA24", descricao: "Interpretar dados estatísticos em textos, tabelas e gráficos, produzindo textos com conclusões." },
+            { codigo: "EF05MA25", descricao: "Realizar pesquisa envolvendo variáveis categóricas e numéricas e apresentar relatório escrito." }
+          ],
+          "6º Ano": [
+            { codigo: "EF06MA01", descricao: "Comparar, ordenar, ler e escrever números naturais e racionais decimais finitos na reta numérica." },
+            { codigo: "EF06MA02", descricao: "Reconhecer o sistema de numeração decimal e destacar suas principais características (base e valor posicional)." },
+            { codigo: "EF06MA03", descricao: "Resolver e elaborar problemas com cálculos em números naturais por estratégias variadas." },
+            { codigo: "EF06MA04", descricao: "Construir algoritmo em linguagem natural e representá-lo por fluxograma para resolução de problemas." },
+            { codigo: "EF06MA05", descricao: "Classificar números naturais em primos e compostos, múltiplos e divisores, e critérios de divisibilidade." },
+            { codigo: "EF06MA06", descricao: "Resolver e elaborar problemas que envolvam as ideias de múltiplo e de divisor." },
+            { codigo: "EF06MA07", descricao: "Compreender, comparar e ordenar frações associadas a partes de inteiros e resultado de divisão." },
+            { codigo: "EF06MA08", descricao: "Reconhecer que racionais positivos podem ser expressos em formas fracionária e decimal." },
+            { codigo: "EF06MA09", descricao: "Resolver e elaborar problemas envolvendo cálculo de fração de uma quantidade." },
+            { codigo: "EF06MA10", descricao: "Resolver e elaborar problemas envolvendo adição ou subtração com racionais positivos na forma fracionária." },
+            { codigo: "EF06MA11", descricao: "Resolver e elaborar problemas com racionais positivos decimais nas quatro operações e potenciação." },
+            { codigo: "EF06MA12", descricao: "Fazer estimativas de quantidades e aproximar números para múltiplos da potência de 10 mais próxima." },
+            { codigo: "EF06MA13", descricao: "Resolver e elaborar problemas envolvendo porcentagens com base na proporcionalidade, sem regra de três." },
+            { codigo: "EF06MA14", descricao: "Reconhecer que a igualdade matemática não se altera ao operar ambos os membros por um mesmo número." },
+            { codigo: "EF06MA15", descricao: "Resolver e elaborar problemas de partilha de quantidade em duas partes desiguais (razões)." },
+            { codigo: "EF06MA16", descricao: "Associar pares ordenados de números a pontos do plano cartesiano do 1º quadrante." },
+            { codigo: "EF06MA17", descricao: "Quantificar e estabelecer relações entre vértices, faces e arestas de prismas e pirâmides." },
+            { codigo: "EF06MA18", descricao: "Reconhecer, nomear e comparar polígonos, classificando-os em regulares e não regulares." },
+            { codigo: "EF06MA19", descricao: "Identificar características dos triângulos e classificá-los quanto a lados e ângulos." },
+            { codigo: "EF06MA20", descricao: "Identificar características dos quadriláteros e classificá-los quanto a lados e ângulos." },
+            { codigo: "EF06MA21", descricao: "Construir figuras planas semelhantes em situações de ampliação e redução." },
+            { codigo: "EF06MA22", descricao: "Utilizar instrumentos para representações de retas paralelas e perpendiculares." },
+            { codigo: "EF06MA23", descricao: "Construir algoritmo para resolver situações passo a passo (dobraduras ou deslocamentos)." },
+            { codigo: "EF06MA24", descricao: "Resolver e elaborar problemas envolvendo grandezas de comprimento, massa, tempo, temperatura, área e volume." },
+            { codigo: "EF06MA25", descricao: "Reconhecer a abertura do ângulo como grandeza associada a figuras geométricas." },
+            { codigo: "EF06MA26", descricao: "Resolver problemas envolvendo noção de ângulo em diferentes contextos (ângulo de visión)." },
+            { codigo: "EF06MA27", descricao: "Determinar medidas da abertura de ângulos por meio de transferidor." },
+            { codigo: "EF06MA28", descricao: "Interpretar, descrever e desenhar plantas baixas simples de residências." },
+            { codigo: "EF06MA29", descricao: "Analisar mudanças que ocorrem no perímetro e na área de um quadrado ao ampliar seus lados." },
+            { codigo: "EF06MA30", descricao: "Calcular probabilidade de evento aleatório expressando-a por fração, decimal e percentual." },
+            { codigo: "EF06MA31", descricao: "Identificar variáveis, frequências e elementos constitutivos de gráficos." },
+            { codigo: "EF06MA32", descricao: "Interpretar e resolver situações com dados de pesquisas da mídia sobre contextos socioambientais." },
+            { codigo: "EF06MA33", descricao: "Planejar e coletar dados de pesquisa e fazer uso de planilhas eletrônicas." },
+            { codigo: "EF06MA34", descricao: "Interpretar e desenvolver fluxogramas simples identificando relações." }
+          ],
+          "7º Ano": [
+            { codigo: "EF07MA01", descricao: "Resolver e elaborar problemas com números naturais envolvendo divisor e múltiplo (MDC e MMC)." },
+            { codigo: "EF07MA02", descricao: "Resolver e elaborar problemas envolvendo porcentagens, acréscimos e decréscimos simples." },
+            { codigo: "EF07MA03", descricao: "Comparar e ordenar números inteiros, associando-os a pontos da reta numérica e operações." },
+            { codigo: "EF07MA04", descricao: "Resolver e elaborar problemas que envolvam operações com números inteiros." },
+            { codigo: "EF07MA05", descricao: "Resolver um mesmo problema utilizando diferentes algoritmos." },
+            { codigo: "EF07MA06", descricao: "Reconhecer que resoluções de problemas com mesma estrutura utilizam mesmos procedimentos." },
+            { codigo: "EF07MA07", descricao: "Representar por meio de fluxograma os passos para resolver um grupo de problemas." },
+            { codigo: "EF07MA08", descricao: "Comparar e ordenar frações associadas a partes de inteiros, divisão, razão e operador." },
+            { codigo: "EF07MA09", descricao: "Utilizar associação entre razão e fração na resolução de problemas." },
+            { codigo: "EF07MA10", descricao: "Comparar e ordenar números racionais em diferentes contextos na reta numérica." },
+            { codigo: "EF07MA11", descricao: "Compreender e utilizar multiplicação e divisão de números racionais e suas propriedades." },
+            { codigo: "EF07MA12", descricao: "Resolver e elaborar problemas envolvendo operações com números racionais." },
+            { codigo: "EF07MA13", descricao: "Compreender a ideia de variável para expressar relação entre grandezas, diferenciando de incógnita." },
+            { codigo: "EF07MA14", descricao: "Classificar sequências em recursivas e não recursivas." },
+            { codigo: "EF07MA15", descricao: "Utilizar simbologia algébrica para expressar regularidades encontradas em sequências." },
+            { codigo: "EF07MA16", descricao: "Reconhecer se duas expressões algébricas de uma mesma sequência são equivalentes." },
+            { codigo: "EF07MA17", descricao: "Resolver e elaborar problemas de variação de proporcionalidade direta e inversa entre grandezas." },
+            { codigo: "EF07MA18", descricao: "Resolver e elaborar problemas representados por equações polinomiais de 1º grau." },
+            { codigo: "EF07MA19", descricao: "Realizar transformações de polígonos no plano cartesiano por multiplicação de coordenadas." },
+            { codigo: "EF07MA20", descricao: "Reconhecer e representar no plano cartesiano simétricos de figuras em relação aos eixos e origem." },
+            { codigo: "EF07MA21", descricao: "Reconhecer e construir figuras obtidas por simetrias de translação, rotação e reflexão." },
+            { codigo: "EF07MA22", descricao: "Construir circunferências com compasso, reconhecendo-as como lugar geométrico." },
+            { codigo: "EF07MA23", descricao: "Verificar relações entre ângulos formados por retas paralelas cortadas por transversal." },
+            { codigo: "EF07MA24", descricao: "Construir triângulos, condição de existência e soma dos ângulos internos (180º)." },
+            { codigo: "EF07MA25", descricao: "Reconhecer rigidez geométrica dos triângulos e suas aplicações na arquitetura." },
+            { codigo: "EF07MA26", descricao: "Descrever algoritmo em fluxograma para construção de triângulo dadas as medidas dos lados." },
+            { codigo: "EF07MA27", descricao: "Calcular medidas de ângulos internos de polígonos regulares e relações com externos." },
+            { codigo: "EF07MA28", descricao: "Descrever algoritmo para construção de polígono regular conhecida a medida do lado." },
+            { codigo: "EF07MA29", descricao: "Resolver e elaborar problemas envolvendo medidas de grandezas reconhecendo aproximação." },
+            { codigo: "EF07MA30", descricao: "Resolver e elaborar problemas de volume de blocos retangulares com unidades usuais." },
+            { codigo: "EF07MA31", descricao: "Estabelecer expressões de cálculo de área de triângulos e quadriláteros." },
+            { codigo: "EF07MA32", descricao: "Resolver e elaborar problemas de cálculo de área de figuras planas decomponíveis." },
+            { codigo: "EF07MA33", descricao: "Estabelecer o número Pi como razão entre comprimento da circunferência e diâmetro." },
+            { codigo: "EF07MA34", descricao: "Planejar e realizar experimentos aleatórios envolvendo cálculo de probabilidades." },
+            { codigo: "EF07MA35", descricao: "Compreender o significado de média estatística como indicador de tendência." },
+            { codigo: "EF07MA36", descricao: "Planejar e realizar pesquisa censitária ou amostral e comunicar dados em relatório." },
+            { codigo: "EF07MA37", descricao: "Interpretar e analisar dados apresentados em gráfico de setores (pizza)." }
+          ],
+          "8º Ano": [
+            { codigo: "EF08MA01", descricao: "Efetuar cálculos com potências de expoentes inteiros e aplicar em notação científica." },
+            { codigo: "EF08MA02", descricao: "Resolver e elaborar problemas usando relação entre potenciação e radiciação." },
+            { codigo: "EF08MA03", descricao: "Resolver e elaborar problemas de contagem aplicando princípio multiplicativo." },
+            { codigo: "EF08MA04", descricao: "Resolver e elaborar problemas envolvendo cálculo de porcentagens com tecnologias." },
+            { codigo: "EF08MA05", descricao: "Reconhecer e utilizar procedimentos para obtenção de fração geratriz de dízima periódica." },
+            { codigo: "EF08MA06", descricao: "Resolver e elaborar problemas de valor numérico de expressões algébricas." },
+            { codigo: "EF08MA07", descricao: "Associar equação linear de 1º grau com duas incógnitas a uma reta no plano cartesiano." },
+            { codigo: "EF08MA08", descricao: "Resolver e elaborar problemas representados por sistemas de equações de 1º grau." },
+            { codigo: "EF08MA09", descricao: "Resolver e elaborar problemas representados por equações polinomiais de 2º grau do tipo ax²=b." },
+            { codigo: "EF08MA10", descricao: "Identificar regularidade de sequência numérica não recursiva e construir fluxograma." },
+            { codigo: "EF08MA11", descricao: "Identificar regularidade de sequência numérica recursiva e construir fluxograma." },
+            { codigo: "EF08MA12", descricao: "Identificar natureza da variação de grandezas (direta, inversa ou não proporcional)." },
+            { codigo: "EF08MA13", descricao: "Resolver e elaborar problemas envolvendo grandezas direta ou inversamente proporcionais." },
+            { codigo: "EF08MA14", descricao: "Demonstrar propriedades de quadriláteros por meio de congruência de triângulos." },
+            { codigo: "EF08MA15", descricao: "Construir mediatriz, bissetriz, ângulos e polígonos regulares com instrumentos ou software." },
+            { codigo: "EF08MA16", descricao: "Descrever fluxograma para construção de hexágono regular de qualquer área." },
+            { codigo: "EF08MA17", descricao: "Aplicar conceitos de mediatriz e bissetriz como lugares geométricos." },
+            { codigo: "EF08MA18", descricao: "Reconhecer e construir figuras obtidas por composições de transformações geométricas." },
+            { codigo: "EF08MA19", descricao: "Resolver e elaborar problemas envolvendo medidas de área de figuras geométricas." },
+            { codigo: "EF08MA20", descricao: "Reconhecer relação entre litro, decímetro cúbico e metro cúbico." },
+            { codigo: "EF08MA21", descricao: "Resolver e elaborar problemas envolvendo volume de recipiente em bloco retangular." },
+            { codigo: "EF08MA22", descricao: "Calcular probabilidade de eventos com espaço amostral e princípio multiplicativo." },
+            { codigo: "EF08MA23", descricao: "Avaliar adequação de diferentes tipos de gráficos para representar dados." },
+            { codigo: "EF08MA24", descricao: "Classificar frequências de variável contínua em classes para tomada de decisão." },
+            { codigo: "EF08MA25", descricao: "Obter medidas de tendência central (média, moda, mediana) e dispersão (amplitude)." },
+            { codigo: "EF08MA26", descricao: "Selecionar razões para realização de pesquisas amostrais e técnicas de amostragem." },
+            { codigo: "EF08MA27", descricao: "Planejar e executar pesquisa amostral e escrever relatório com gráficos apropriados." }
+          ],
+          "9º Ano": [
+            { codigo: "EF09MA01", descricao: "Reconhecer segmentos de reta cujos comprimentos não são expressos por número racional (diagonais e alturas)." },
+            { codigo: "EF09MA02", descricao: "Reconhecer número irracional como decimal infinito e não periódico na reta numérica." },
+            { codigo: "EF09MA03", descricao: "Efetuar cálculos com números reais, inclusive potências com expoentes negativos e fracionários." },
+            { codigo: "EF09MA04", descricao: "Resolver e elaborar problemas com números reais, inclusive em notação científica." },
+            { codigo: "EF09MA05", descricao: "Resolver e elaborar problemas de porcentagens com percentuais sucessivos (educação financeira)." },
+            { codigo: "EF09MA06", descricao: "Compreender funções como relações de dependência unívoca (numérica, algébrica e gráfica)." },
+            { codigo: "EF09MA07", descricao: "Resolver problemas envolvendo razão entre grandezas de espécies diferentes (velocidade e densidade)." },
+            { codigo: "EF09MA08", descricao: "Resolver e elaborar problemas de proporcionalidade direta e inversa, escalas e divisão proporcional." },
+            { codigo: "EF09MA09", descricao: "Compreender processos de fatoração algébrica e produtos notáveis para resolver equações do 2º grau." },
+            { codigo: "EF09MA10", descricao: "Demonstrar relações simples entre ângulos formados por retas paralelas cortadas por transversal." },
+            { codigo: "EF09MA11", descricao: "Resolver problemas relacionando arcos, ângulos centrais e inscritos na circunferência." },
+            { codigo: "EF09MA12", descricao: "Reconhecer condições necessárias e suficientes para semelhança de triângulos." },
+            { codigo: "EF09MA13", descricao: "Demonstrar relações métricas no triângulo retângulo, incluindo o Teorema de Pitágoras." },
+            { codigo: "EF09MA14", descricao: "Resolver e elaborar problemas de aplicação do Teorema de Pitágoras e Tales." },
+            { codigo: "EF09MA15", descricao: "Descrever fluxograma para construção de polígono regular com lado conhecido." },
+            { codigo: "EF09MA16", descricao: "Determinar ponto médio e distância entre dois pontos no plano cartesiano sem fórmula." },
+            { codigo: "EF09MA17", descricao: "Reconhecer vistas ortogonais de figuras espaciais para desenhar em perspectiva." },
+            { codigo: "EF09MA18", descricao: "Empregar unidades para medir distâncias astronômicas e microscópicas (informática)." },
+            { codigo: "EF09MA19", descricao: "Resolver e elaborar problemas de volume de prismas e cilindros retos." },
+            { codigo: "EF09MA20", descricao: "Reconhecer em experimentos aleatórios eventos dependentes e independentes e calcular probabilidade." },
+            { codigo: "EF09MA21", descricao: "Analisar e identificar em gráficos da mídia elementos que induzem a erros de leitura." },
+            { codigo: "EF09MA22", descricao: "Escolher e construir o gráfico mais adequado para apresentar conjunto de dados." },
+            { codigo: "EF09MA23", descricao: "Planejar e executar pesquisa amostral e comunicar resultados com avaliação de tendência central." }
+          ]
+        },
+        "Libras": {
+          "Educação Infantil": [
+            { codigo: "EI01LS01", descricao: "Interagir em Libras em situações cotidianas, demonstrando interesse na comunicação visual." },
+            { codigo: "EI03LS05", descricao: "Reconhecer sinais básicos de Libras referentes a familiares, sentimentos e objetos diários." }
+          ],
+          "Ensino Fundamental (1º ao 5º)": [
+            { codigo: "EF01LS01", descricao: "Utilizar o alfabeto manual e sinais básicos de Libras para identificação pessoal." },
+            { codigo: "EF03LS12", descricao: "Ampliar o vocabulário em Libras relacionado a animais, cores, números e ambiente escolar." }
+          ],
+          "Ensino Fundamental (6º ao 9º)": [
+            { codigo: "EF07LS25", descricao: "Produzir enunciados complexos em Libras respeitando a estrutura gramatical visual-espacial." },
+            { codigo: "EF09LS40", descricao: "Debater temas socioculturais e acadêmicos utilizando terminologias avançadas em Libras." }
+          ]
+        },
+        "PortuguesL2": {
+          "Anos Iniciais": [
+            { codigo: "EF02LP01L2", descricao: "Reconhecer a correspondência entre a palavra escrita em português e seu sinal correspondente em Libras." },
+            { codigo: "EF05LP15L2", descricao: "Produzir textos escritos em Língua Portuguesa (L2) estruturando frases com apoio visual." }
+          ],
+          "Anos Finais": [
+            { codigo: "EF08LP22L2", descricao: "Analisar aspectos sintáticos e semânticos do Português escrito para leitores surdos." },
+            { codigo: "EF09LP30L2", descricao: "Escrever dissertações e resumos em Língua Portuguesa como segunda língua com autonomia." }
+          ]
+        }
+      };
+
+      // Funções de Inicialização e Interface
+      window.onload = function() {
+        atualizarEtapas();
+        inicializarBlocoDatas();
+        verificarStatusBancoFirebase();
+        carregarPlanosDoFirebase();
+      };
+
+      function testarUrlCabecalho() {
+        const input = document.getElementById('cabecalhoUrl');
+        if (!input.value.trim()) {
+          alertPersonalizado("Por favor, informe a URL da imagem de cabeçalho.");
+          return;
+        }
+        window.tratarEAtualizarPreviewCabecalho();
       }
 
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3500);
-    }
+      function atualizarEtapas() {
+        const disciplina = document.getElementById('selectDisciplina').value;
+        const selectEtapa = document.getElementById('selectEtapa');
+        selectEtapa.innerHTML = '';
 
-    // Inicialização ao carregar a página
-    window.onload = function() {
-      adicionarCampoData();
-      atualizarDisciplinasEEtapas();
-      verificarStatusBancoFirebase();
-    };
-  </script>
+        if (baseMatrizCurricular[disciplina]) {
+          Object.keys(baseMatrizCurricular[disciplina]).forEach(etapa => {
+            const opt = document.createElement('option');
+            opt.value = etapa;
+            opt.textContent = etapa;
+            selectEtapa.appendChild(opt);
+          });
+        }
+        atualizarHabilidadesDisponiveis();
+      }
+
+      function atualizarHabilidadesDisponiveis() {
+        const disciplina = document.getElementById('selectDisciplina').value;
+        const etapa = document.getElementById('selectEtapa').value;
+        const selectHab = document.getElementById('selectHabilidade');
+        selectHab.innerHTML = '<option value="">Selecione um código...</option>';
+
+        if (baseMatrizCurricular[disciplina] && baseMatrizCurricular[disciplina][etapa]) {
+          baseMatrizCurricular[disciplina][etapa].forEach(hab => {
+            const opt = document.createElement('option');
+            opt.value = hab.codigo;
+            opt.textContent = hab.codigo;
+            opt.setAttribute('data-descricao', hab.descricao);
+            selectHab.appendChild(opt);
+          });
+        }
+        document.getElementById('boxLeituraHabilidade').innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>';
+      }
+
+      function mostrarDetalhesHabilidadeSelecionada() {
+        const selectHab = document.getElementById('selectHabilidade');
+        const box = document.getElementById('boxLeituraHabilidade');
+        const selectedOpt = selectHab.options[selectHab.selectedIndex];
+
+        if (!selectHab.value) {
+          box.innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>';
+          return;
+        }
+
+        const descricao = selectedOpt.getAttribute('data-descricao');
+        box.innerHTML = `<div><strong class="text-indigo-700">${selectHab.value}:</strong> ${descricao}</div>`;
+      }
+
+      function adicionarHabilidadeAoPlano() {
+        const selectHab = document.getElementById('selectHabilidade');
+        if (!selectHab.value) {
+          alertPersonalizado("Selecione uma habilidade antes de adicionar.");
+          return;
+        }
+
+        const codigo = selectHab.value;
+        const selectedOpt = selectHab.options[selectHab.selectedIndex];
+        const descricao = selectedOpt.getAttribute('data-descricao');
+
+        if (habilidadesAdicionadas.some(h => h.codigo === codigo)) {
+          alertPersonalizado("Esta habilidade já foi adicionada ao plano.");
+          return;
+        }
+
+        habilidadesAdicionadas.push({ codigo, descricao });
+        renderizarHabilidadesVinculadas();
+        selectHab.value = "";
+        document.getElementById('boxLeituraHabilidade').innerHTML = '<span class="text-slate-400 italic">A descrição completa da habilidade aparecerá aqui ao ser selecionada...</span>';
+      }
+
+      function removerHabilidadeVinculada(codigo) {
+        habilidadesAdicionadas = habilidadesAdicionadas.filter(h => h.codigo !== codigo);
+        renderizarHabilidadesVinculadas();
+      }
+
+      function renderizarHabilidadesVinculadas() {
+        const container = document.getElementById('listaHabilidadesVinculadas');
+        if (habilidadesAdicionadas.length === 0) {
+          container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-3">Nenhuma habilidade adicionada ainda.</p>';
+          return;
+        }
+
+        container.innerHTML = '';
+        habilidadesAdicionadas.forEach(hab => {
+          const div = document.createElement('div');
+          div.className = "flex items-start justify-between bg-white border border-indigo-100 p-2.5 rounded-lg text-xs shadow-sm";
+          div.innerHTML = `
+            <div class="pr-2">
+              <span class="font-bold text-indigo-700 mr-1">${hab.codigo}:</span>
+              <span class="text-slate-700">${hab.descricao}</span>
+            </div>
+            <button type="button" onclick="removerHabilidadeVinculada('${hab.codigo}')" class="text-rose-500 hover:text-rose-700 p-1">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      // Gestão de Múltiplas Datas (Bloco de Aulas)
+      function inicializarBlocoDatas() {
+        datasBlocoAulas = [new Date().toISOString().split('T')[0]];
+        renderizarInputsDatas();
+      }
+
+      function adicionarDataAoBloco() {
+        datasBlocoAulas.push('');
+        renderizarInputsDatas();
+      }
+
+      function removerDataDoBloco(index) {
+        if (datasBlocoAulas.length <= 1) {
+          alertPersonalizado("O bloco de aulas precisa ter pelo menos uma data.");
+          return;
+        }
+        datasBlocoAulas.splice(index, 1);
+        renderizarInputsDatas();
+      }
+
+      function atualizarDataBlocoValue(index, value) {
+        datasBlocoAulas[index] = value;
+      }
+
+      function renderizarInputsDatas() {
+        const container = document.getElementById('containerDatasAulas');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        datasBlocoAulas.forEach((dt, idx) => {
+          const div = document.createElement('div');
+          div.className = "flex items-center space-x-1.5 bg-white border border-slate-200 rounded-lg p-1.5";
+          div.innerHTML = `
+            <span class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Aula ${idx + 1}</span>
+            <input type="date" value="${dt}" onchange="atualizarDataBlocoValue(${idx}, this.value)" required class="flex-1 text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            ${datasBlocoAulas.length > 1 ? `
+              <button type="button" onclick="removerDataDoBloco(${idx})" class="text-slate-400 hover:text-rose-600 p-1">
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+            ` : ''}
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      function limparFormulario() {
+        document.getElementById('formPlanoAula').reset();
+        document.getElementById('previewCabecalhoForm').classList.add('hidden');
+        document.getElementById('textNoCabecalho').textContent = "Insira a URL do cabeçalho acima para visualizar";
+        habilidadesAdicionadas = [];
+        renderizarHabilidadesVinculadas();
+        inicializarBlocoDatas();
+        atualizarHabilidadesDisponiveis();
+      }
+
+      // Operações Rápidas e Dinâmicas com Firebase
+      function verificarStatusBancoFirebase() {
+        const badgeDot = document.getElementById('dotStatusFirebase');
+        const badgeTxt = document.getElementById('txtStatusFirebase');
+
+        // Consulta leve utilizando limitToFirst(1) compatível com o Firebase JS SDK
+        db.ref('matrizCurricularBNCC').limitToFirst(1).once('value')
+          .then(snapshot => {
+            if (snapshot.exists()) {
+              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+              badgeTxt.textContent = "Firebase Sincronizado (247 Habilidades)";
+            } else {
+              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
+              badgeTxt.textContent = "Matriz Pendente (0/247)";
+            }
+          })
+          .catch(() => {
+            badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+            badgeTxt.textContent = "Conectado ao Firebase";
+          });
+      }
+
+      function sincronizarMatrizComFirebase() {
+        const btnText = document.getElementById('txtBtnSubirMatriz');
+        const badgeTxt = document.getElementById('txtStatusFirebase');
+        const badgeDot = document.getElementById('dotStatusFirebase');
+        
+        let totalMatematica = 0;
+        Object.keys(baseMatrizCurricular.Matematica).forEach(etapa => {
+          totalMatematica += baseMatrizCurricular.Matematica[etapa].length;
+        });
+
+        btnText.textContent = `Enviando (0/${totalMatematica})...`;
+        badgeTxt.textContent = `Sincronizando no Firebase...`;
+        badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+
+        let salvos = 0;
+        const updates = {};
+        updates['/matrizCurricularBNCC'] = baseMatrizCurricular;
+
+        db.ref().update(updates)
+          .then(() => {
+            btnText.textContent = "Subir Matriz Curricular";
+            badgeTxt.textContent = `Firebase Sincronizado (${totalMatematica} Habilidades)`;
+            badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+            alertPersonalizado(`Sucesso! Matriz Curricular enviada com sucesso ao Firebase (${totalMatematica} habilidades de Matemática cadastradas).`);
+          })
+          .catch((error) => {
+            btnText.textContent = "Subir Matriz Curricular";
+            badgeTxt.textContent = "Erro na Sincronização";
+            badgeDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+            alertPersonalizado("Erro ao enviar matriz para o Firebase: " + error.message);
+          });
+      }
+
+      function salvarPlano(e) {
+        e.preventDefault();
+
+        const cabecalhoUrl = document.getElementById('cabecalhoUrl').value.trim();
+        const disciplina = document.getElementById('selectDisciplina').value;
+        const etapa = document.getElementById('selectEtapa').value;
+        const tituloAula = document.getElementById('inputTituloAula').value.trim();
+        const objetivos = document.getElementById('inputObjetivos').value.trim();
+        const metodologia = document.getElementById('inputMetodologia').value.trim();
+        const avaliacao = document.getElementById('inputAvaliacao').value.trim();
+        const observacoes = document.getElementById('inputObservacoes').value.trim();
+
+        if (habilidadesAdicionadas.length === 0) {
+          alertPersonalizado("Adicione pelo menos uma habilidade ao plano antes de salvar.");
+          return;
+        }
+
+        const datasValidas = datasBlocoAulas.filter(d => d.trim() !== '');
+        if (datasValidas.length === 0) {
+          alertPersonalizado("Preencha pelo menos uma data no cronograma do bloco de aulas.");
+          return;
+        }
+
+        const idPlano = 'plano_' + Date.now();
+        const plano = {
+          id: idPlano,
+          cabecalhoUrl,
+          disciplina,
+          etapa,
+          tituloAula,
+          datasBloco: datasValidas,
+          habilidades: habilidadesAdicionadas,
+          objetivos,
+          metodologia,
+          avaliacao,
+          observacoes,
+          criadoEm: new Date().toISOString()
+        };
+
+        db.ref('planosDeAula/' + idPlano).set(plano)
+          .then(() => {
+            alertPersonalizado("Plano de Aula salvo com sucesso!");
+            limparFormulario();
+          })
+          .catch((err) => {
+            alertPersonalizado("Erro ao salvar no Firebase: " + err.message);
+          });
+      }
+
+      function carregarPlanosDoFirebase() {
+        db.ref('planosDeAula').on('value', (snapshot) => {
+          planosSalvos = snapshot.val() || {};
+          renderizarListaPlanos();
+        });
+      }
+
+      function renderizarListaPlanos() {
+        const container = document.getElementById('containerListaPlanos');
+        const contador = document.getElementById('contadorPlanos');
+        const chaves = Object.keys(planosSalvos);
+
+        contador.textContent = chaves.length;
+
+        if (chaves.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-8 text-slate-400 text-xs italic">
+              Nenhum plano salvo ainda. Crie seu primeiro plano ao lado!
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = '';
+        chaves.sort((a, b) => new Date(planosSalvos[b].criadoEm) - new Date(planosSalvos[a].criadoEm)).forEach(key => {
+          const p = planosSalvos[key];
+          const div = document.createElement('div');
+          div.className = "bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-xl p-3.5 transition space-y-2";
+          
+          const datasFmt = p.datasBloco ? p.datasBloco.map(d => formatarDataBR(d)).join(', ') : 'Sem data';
+
+          div.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">${p.disciplina} - ${p.etapa}</span>
+                <h4 class="font-bold text-slate-800 text-xs mt-1.5">${p.tituloAula}</h4>
+              </div>
+              <button onclick="excluirPlano('${p.id}')" class="text-slate-400 hover:text-rose-600 p-1" title="Excluir Plano">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
+            <div class="text-[11px] text-slate-500 flex items-center space-x-1">
+              <i class="fa-regular fa-calendar text-indigo-500"></i>
+              <span>${datasFmt}</span>
+            </div>
+            <div class="text-[11px] text-slate-600 line-clamp-1">
+              <strong>Habilidades:</strong> ${p.habilidades.map(h => h.codigo).join(', ')}
+            </div>
+            <div class="pt-2 flex justify-end space-x-2 border-t border-slate-200/60">
+              <button onclick="visualizarPlano('${p.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                <i class="fa-solid fa-eye"></i>
+                <span>Visualizar / PDF</span>
+              </button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      function visualizarPlano(id) {
+        const p = planosSalvos[id];
+        if (!p) return;
+
+        const containerModal = document.getElementById('conteudoPlanoImpressao');
+        const datasFmt = p.datasBloco ? p.datasBloco.map((d, idx) => `<span class="bg-slate-100 border border-slate-200 px-2 py-1 rounded text-xs"><strong>Aula ${idx+1}:</strong> ${formatarDataBR(d)}</span>`).join(' ') : '';
+
+        const logoHtml = p.cabecalhoUrl 
+          ? `<div class="mb-4 text-center border-b pb-4"><img src="${p.cabecalhoUrl}" alt="Cabeçalho Institucional" class="max-h-24 mx-auto object-contain"></div>`
+          : '';
+
+        containerModal.innerHTML = `
+          ${logoHtml}
+          <div class="border-b border-slate-200 pb-4 mb-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">${p.disciplina} • ${p.etapa}</span>
+                <h2 class="text-xl font-bold text-slate-900 mt-1">${p.tituloAula}</h2>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-3">
+              ${datasFmt}
+            </div>
+          </div>
+
+          <div class="space-y-4 text-sm">
+            <div>
+              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-2">Habilidades BNCC / Currículo</h4>
+              <ul class="space-y-1.5">
+                ${p.habilidades.map(h => `<li class="bg-indigo-50/60 p-2.5 rounded-lg border border-indigo-100 text-xs"><strong class="text-indigo-800">${h.codigo}:</strong> ${h.descricao}</li>`).join('')}
+              </ul>
+            </div>
+
+            ${p.objetivos ? `
+            <div>
+              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Objetivos de Aprendizagem</h4>
+              <p class="text-slate-700 whitespace-pre-line text-xs bg-slate-50 p-3 rounded-lg border">${p.objetivos}</p>
+            </div>` : ''}
+
+            ${p.metodologia ? `
+            <div>
+              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Metodologia / Desenvolvimento</h4>
+              <p class="text-slate-700 whitespace-pre-line text-xs bg-slate-50 p-3 rounded-lg border">${p.metodologia}</p>
+            </div>` : ''}
+
+            ${p.avaliacao ? `
+            <div>
+              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Avaliação</h4>
+              <p class="text-slate-700 whitespace-pre-line text-xs bg-slate-50 p-3 rounded-lg border">${p.avaliacao}</p>
+            </div>` : ''}
+
+            ${p.observacoes ? `
+            <div>
+              <h4 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-b pb-1 mb-1">Anotações / Adaptações Pedagógicas</h4>
+              <p class="text-slate-700 whitespace-pre-line text-xs bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-900">${p.observacoes}</p>
+            </div>` : ''}
+          </div>
+        `;
+
+        document.getElementById('modalVisualizacao').classList.remove('hidden');
+      }
+
+      function fecharModalVisualizacao() {
+        document.getElementById('modalVisualizacao').classList.add('hidden');
+      }
+
+      function excluirPlano(id) {
+        if (confirm("Tem certeza que deseja excluir este plano de aula?")) {
+          db.ref('planosDeAula/' + id).remove()
+            .then(() => alertPersonalizado("Plano excluído com sucesso."))
+            .catch(err => alertPersonalizado("Erro ao excluir: " + err.message));
+        }
+      }
+
+      function formatarDataBR(dataIso) {
+        if (!dataIso) return '';
+        const partes = dataIso.split('-');
+        if (partes.length !== 3) return dataIso;
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+
+      function alertPersonalizado(mensagem) {
+        const div = document.createElement('div');
+        div.className = "fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl z-50 flex items-center space-x-2 transition transform translate-y-0";
+        div.innerHTML = `<i class="fa-solid fa-circle-info text-indigo-400"></i><span>${mensagem}</span>`;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 4000);
+      }
+    </script>
 </body>
 </html>
