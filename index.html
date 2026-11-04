@@ -14,7 +14,7 @@
   <!-- Google Fonts Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Firebase SDKs (compat para facilidade de uso em arquivo único) -->
+  <!-- Firebase SDKs (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -41,7 +41,6 @@
   </script>
 
   <style>
-    /* Estilos customizados para impressão */
     @media print {
       body * {
         visibility: hidden;
@@ -64,7 +63,6 @@
       }
     }
     
-    /* Scrollbar personalizada */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -139,10 +137,10 @@
             <h3 class="text-sm font-bold uppercase tracking-wider text-brand-600 mb-2 flex items-center gap-2">
               <i class="fas fa-image"></i> Cabeçalho Institucional da Escola (Link / GitHub)
             </h3>
-            <p class="text-xs text-slate-500 mb-3">Insira a URL da imagem (ex: link do GitHub RAW ou GitHub Pages) para exibir no topo dos documentos e impressões em PDF.</p>
+            <p class="text-xs text-slate-500 mb-3">Insira a URL da imagem (o link do GitHub será convertido automaticamente para RAW).</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
               <div class="md:col-span-2">
-                <input type="url" id="cabecalhoUrl" oninput="tratarEAtualizarPreviewCabecalho()" placeholder="https://raw.githubusercontent.com/usuario/repositorio/main/cabecalho.png" class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all">
+                <input type="url" id="cabecalhoUrl" oninput="tratarEAtualizarPreviewCabecalho()" placeholder="https://github.com/rwpo/Plano_de_Aula/blob/main/Cabecalho_CAS.png" class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all">
               </div>
               <div class="flex items-center justify-center border border-dashed border-slate-300 rounded-lg p-2 bg-white min-h-[50px]">
                 <img id="previewCabecalhoForm" src="" alt="Pré-visualização do Cabeçalho" class="max-h-12 max-w-full object-contain hidden" onerror="tratarErroImagemPreview()">
@@ -156,7 +154,7 @@
             <h3 class="text-sm font-bold uppercase tracking-wider text-brand-600 mb-4 flex items-center gap-2">
               <i class="fas fa-user-graduate"></i> 1. Identificação Geral
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nome do Professor *</label>
                 <input type="text" id="professor" required placeholder="Ex: Prof. Carlos Silva" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
@@ -178,47 +176,40 @@
                 </select>
               </div>
 
-              <!-- SUBSITUIÇÃO DO CAMPO FIXO DE QTD AULAS POR GERENCIADOR DINÂMICO DE DATAS -->
-              <div class="lg:col-span-2">
-                <div class="flex justify-between items-center mb-1">
-                  <label class="block text-xs font-semibold text-slate-600 uppercase">Datas das Aulas *</label>
-                  <span id="badgeQtdAulasCalculada" class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">
-                    1 aula planejada
-                  </span>
-                </div>
-                
-                <!-- Conteiner Dinâmico de Datas -->
-                <div id="containerDatasAulas" class="space-y-2 max-h-32 overflow-y-auto pr-1">
-                  <!-- Inputs renderizados via JS -->
-                </div>
-                
-                <button type="button" onclick="adicionarCampoData()" class="mt-2 text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">
-                  <i class="fas fa-plus-circle"></i> Adicionar nova data de aula
-                </button>
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Turma / Agrupamento</label>
                 <input type="text" id="turma" placeholder="Ex: 5º Ano A - Matutino" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
               </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tema / Título da Aula *</label>
-                <input type="text" id="tema" required placeholder="Ex: Operações Fundamentais com Decimais" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+            </div>
+
+            <!-- GERENCIADOR DINÂMICO DE DATAS DE AULA -->
+            <div class="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+              <div class="flex justify-between items-center mb-2">
+                <label class="block text-xs font-semibold text-slate-600 uppercase">Datas e Planejamento de Aulas *</label>
+                <span id="badgeQtdAulasCalculada" class="text-xs bg-brand-100 text-brand-700 px-2.5 py-1 rounded-full font-bold">
+                  1 aula planejada
+                </span>
               </div>
+              <div id="containerDatasAulas" class="space-y-2 mb-2 max-h-36 overflow-y-auto pr-1">
+                <!-- Renderizado via JS -->
+              </div>
+              <button type="button" onclick="adicionarCampoData()" class="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+                <i class="fas fa-plus-circle"></i> Adicionar nova data de aula
+              </button>
+            </div>
+            
+            <div class="mt-4">
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tema / Título da Aula *</label>
+              <input type="text" id="tema" required placeholder="Ex: Operações Fundamentais com Decimais" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
             </div>
           </div>
 
-          <!-- 2. HABILIDADES / OBJETIVOS (BNCC & LIBRAS) -->
+          <!-- 2. HABILIDADES / OBJETIVOS (MÚLTIPLOS CÓDIGOS) -->
           <div>
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-sm font-bold uppercase tracking-wider text-brand-600 flex items-center gap-2">
-                <i class="fas fa-bullseye"></i> 2. Objetivos de Aprendizagem & Habilidades
+                <i class="fas fa-bullseye"></i> 2. Objetivos de Aprendizagem & Habilidades (Permite Múltiplos Códigos)
               </h3>
-              <span id="badgeCodigo" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-mono border border-slate-200">
-                Código: <strong id="codigoCurrentDisplay">EF01MA01</strong>
-              </span>
             </div>
 
             <!-- Regra Português L2 -->
@@ -229,23 +220,37 @@
               </div>
             </div>
 
-            <div class="space-y-4">
+            <!-- SELETOR E ADICIONADOR DE HABILIDADES -->
+            <div class="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80 mb-4">
               <div>
-                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Selecione Habilidade da Matriz (Sugestão)</label>
-                <select id="selectHabilidade" onchange="selecionarHabilidadeMatriz()" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Selecione Habilidade da Matriz Curricular</label>
+                <select id="selectHabilidade" onchange="selecionarHabilidadeMatriz()" class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all">
                   <!-- Carregado dinamicamente -->
                 </select>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-start">
                 <div>
-                  <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Código Identificador</label>
-                  <input type="text" id="codigoHabilidade" readonly class="w-full px-3 py-2 text-sm bg-slate-100 text-slate-600 font-mono border border-slate-200 rounded-lg">
+                  <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Código</label>
+                  <input type="text" id="codigoHabilidade" class="w-full px-3 py-2 text-sm bg-white text-slate-800 font-mono border border-slate-200 rounded-lg" placeholder="Ex: EF01MA01">
                 </div>
-                <div class="sm:col-span-2">
-                  <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Descrição do Objetivo / Habilidade *</label>
-                  <textarea id="descricaoHabilidade" required rows="3" placeholder="Descrição detalhada do objetivo ou habilidade selecionada..." class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"></textarea>
+                <div class="sm:col-span-3">
+                  <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Descrição da Habilidade / Objetivo</label>
+                  <div class="flex gap-2">
+                    <textarea id="descricaoHabilidade" rows="2" placeholder="Descrição detalhada do objetivo ou habilidade..." class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all"></textarea>
+                    <button type="button" onclick="adicionarHabilidadeAoPlano()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold whitespace-nowrap shadow-sm transition-colors flex flex-col items-center justify-center gap-1">
+                      <i class="fas fa-plus"></i> Adicionar
+                    </button>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- LISTA DE HABILIDADES INCLUÍDAS NO PLANO -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">Habilidades / Objetivos Incluídos neste Plano *</label>
+              <div id="containerHabilidadesSelecionadas" class="space-y-2 min-h-[60px] p-3 bg-white rounded-xl border border-slate-200">
+                <!-- Renderizado dinamicamente via JS -->
               </div>
             </div>
           </div>
@@ -372,7 +377,6 @@
 
   <!-- ÁREA EXCLUSIVA PARA IMPRESSÃO / GERAÇÃO DE PDF -->
   <div id="printArea" class="hidden">
-    <!-- Cabeçalho da Escola para Impressão -->
     <div id="printCabecalhoContainer" class="w-full text-center mb-4 hidden">
       <img id="printCabecalhoImg" src="" alt="Cabeçalho da Escola" class="max-w-full max-h-32 mx-auto object-contain mb-2">
     </div>
@@ -384,7 +388,7 @@
           <p class="text-sm text-slate-600" id="printSubtitulo">Gerenciador de Planos de Aula</p>
         </div>
         <div class="text-right">
-          <span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded" id="printCodigo">EF01MA01</span>
+          <span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded" id="printCodigo">CÓDIGOS BNCC</span>
         </div>
       </div>
     </div>
@@ -401,8 +405,8 @@
 
     <div class="space-y-5 text-sm">
       <div>
-        <h3 class="font-bold border-b pb-1 mb-2 uppercase text-xs text-slate-700">1. Objetivos de Aprendizagem & Habilidade</h3>
-        <p class="text-slate-800 whitespace-pre-line" id="printHabilidade">-</p>
+        <h3 class="font-bold border-b pb-1 mb-2 uppercase text-xs text-slate-700">1. Objetivos de Aprendizagem & Habilidade(s)</h3>
+        <div class="text-slate-800 space-y-2" id="printHabilidade">-</div>
       </div>
 
       <div>
@@ -450,7 +454,6 @@
       appId: "1:341072016026:web:ba69c02b894763591a6523"
     };
 
-    // Inicialização da instância do Firebase e referências às tabelas/nós
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
@@ -459,569 +462,270 @@
     const configRef = db.ref('configuracoes/cabecalhoUrl');
 
     // -------------------------------------------------------------
-    // BANCO DE DADOS DA MATRIZ CURRICULAR COMPLETA (1º AO 9º ANO)
+    // BANCO DE DADOS CURRICULAR (BNCC MATEMÁTICA & LIBRAS)
     // -------------------------------------------------------------
     const matrizCurricular = {
       Matematica: {
         "1º Ano": [
           { codigo: "EF01MA01", desc: "Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas." },
-          { codigo: "EF01MA02", desc: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como o pareamento e outros agrupamentos." },
-          { codigo: "EF01MA03", desc: "Estimar e comparar quantidades de objetos de dois conjuntos (até 20 elementos) por estimativa/correspondência." },
+          { codigo: "EF01MA02", desc: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como pareamento e agrupar." },
+          { codigo: "EF01MA03", desc: "Estimar e comparar quantidades de objetos de dois conjuntos (ao menos 20 elementos)." },
           { codigo: "EF01MA04", desc: "Contar a quantidade de objetos de coleções até 100 unidades e apresentar o resultado por registros verbais e simbólicos." },
-          { codigo: "EF01MA05", desc: "Comparar números naturais de até duas ordens em situações cotidianas, com e sem suporte da reta numérica." },
-          { codigo: "EF01MA06", desc: "Construir fatos básicos da adição e utilizá-los na resolução de problemas simples de cálculo mental ou escrito." }
+          { codigo: "EF01MA06", desc: "Construir fatos básicos da adição e utilizá-los em procedimentos de cálculo mental ou escrito." }
         ],
         "2º Ano": [
           { codigo: "EF02MA01", desc: "Comparar e ordenar números naturais (até a ordem de centenas) pela compreensão do sistema de numeração decimal." },
-          { codigo: "EF02MA02", desc: "Fazer estimativas por meio de estratégias diversas a respeito da quantidade de objetos de coleções." },
           { codigo: "EF02MA05", desc: "Construir fatos básicos da adição e subtração e utilizá-los no cálculo mental ou escrito." },
           { codigo: "EF02MA06", desc: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até três ordens." }
         ],
         "3º Ano": [
-          { codigo: "EF03MA01", desc: "Ler, escrever e comparar números naturais de até a ordem de unidade de milhar." },
-          { codigo: "EF03MA06", desc: "Resolver e elaborar problemas de adição e subtração com os significados de juntar, acrescentar, separar e retirar." },
-          { codigo: "EF03MA07", desc: "Construir e utilizar fatos básicos da multiplicação e divisão para o cálculo mental ou escrito." },
-          { codigo: "EF03MA08", desc: "Resolver e elaborar problemas de multiplicação com a ideia de adição de parcelas iguais e organização retangular." }
+          { codigo: "EF03MA01", desc: "Ler, escrever e comparar números naturais de até a ordem de unidades de milhar." },
+          { codigo: "EF03MA06", desc: "Resolver e elaborar problemas de adição e subtração com os significados de juntar, acrescentar, separar, retirar, comparar e completar quantidades." },
+          { codigo: "EF03MA07", desc: "Construir e utilizar fatos básicos da multiplicação e divisão para o cálculo mental ou escrito." }
         ],
         "4º Ano": [
           { codigo: "EF04MA01", desc: "Ler, escrever e ordenar números naturais até a ordem de dezenas de milhar." },
-          { codigo: "EF04MA03", desc: "Resolver e elaborar problemas com números naturais envolvendo adição e subtração utilizando estratégias diversas." },
-          { codigo: "EF04MA05", desc: "Utilizar as propriedades das operações para desenvolver estratégias de cálculo com números naturais." },
-          { codigo: "EF04MA09", desc: "Reconhecer as frações unitárias mais usuais (1/2, 1/3, 1/4, 1/5, 1/10 e 1/100) como unidades de medida." }
+          { codigo: "EF04MA04", desc: "Utilizar as relações entre adição e subtração, bem como entre multiplicação e divisão, para ampliar as estratégias de cálculo." },
+          { codigo: "EF04MA09", desc: "Reconhecer as frações unitárias mais frequentes (1/2, 1/3, 1/4, 1/5, 1/10 e 1/100) como unidades de medida de menores que a unidade." }
         ],
         "5º Ano": [
-          { codigo: "EF05MA01", desc: "Ler, escrever e ordenar números naturais até a ordem das centenas de milhar com compreensão do sistema decimal." },
-          { codigo: "EF05MA07", desc: "Resolver e elaborar problemas de adição e subtração com números racionais, cuja representação decimal seja finita." },
-          { codigo: "EF05MA08", desc: "Resolver e elaborar problemas de multiplicação e divisão com números naturais e com números racionais." },
-          { codigo: "EF05MA16", desc: "Associar figuras espaciais às suas planificações (prismas, pirâmides, cilindros e cones)." }
+          { codigo: "EF05MA01", desc: "Ler, escrever e ordenar números naturais até a ordem das centenas de milhar com compreensão das regras do sistema de numeração decimal." },
+          { codigo: "EF05MA07", desc: "Resolver e elaborar problemas de adição e subtração com números naturais e com números racionais, cuja representação decimal seja finita." },
+          { codigo: "EF05MA08", desc: "Resolver e elaborar problemas de multiplicação e divisão com números naturais e com números racionais cuja representação decimal seja finita." }
         ],
         "6º Ano": [
-          { codigo: "EF06MA01", desc: "Comparar, ordenar, ler e escrever números naturais e números racionais na representação decimal." },
-          { codigo: "EF06MA03", desc: "Resolver e elaborar problemas que envolvam as operações fundamentais com números naturais." },
-          { codigo: "EF06MA07", desc: "Compreender, comparar e ordenar frações associadas às ideias de partes de inteiros e resultado de divisão." },
-          { codigo: "EF06MA10", desc: "Resolver e elaborar problemas que envolvam adição ou subtração com números racionais na representação decimal." },
-          { codigo: "EF06MA24", desc: "Resolver e elaborar problemas que envolvam as grandezas comprimento, massa, tempo, temperatura, área, capacidade e volume." }
+          { codigo: "EF06MA01", desc: "Comparar, ordenar, ler e escrever números naturais e números racionais positivos, cuja representação decimal é finita." },
+          { codigo: "EF06MA03", desc: "Resolver e elaborar problemas que envolvam cálculos (adição, subtração, multiplicação, divisão e potenciação) com números naturais." },
+          { codigo: "EF06MA07", desc: "Compreender, comparar e ordenar frações associadas às ideias de partes de inteiros e resultado de divisão." }
         ],
         "7º Ano": [
-          { codigo: "EF07MA01", desc: "Resolver e elaborar problemas com números inteiros envolvendo as operações fundamentais." },
+          { codigo: "EF07MA01", desc: "Resolver e elaborar problemas com números naturais, envolvendo as noções de divisor e de múltiplo, incluindo MDC e MMC." },
           { codigo: "EF07MA02", desc: "Resolver e elaborar problemas que envolvam porcentagens, incluindo a ideia de aplicação de percentuais sucessivos." },
-          { codigo: "EF07MA16", desc: "Reconhecer a rigidez triangular e suas aplicações nas estruturas arquitetônicas e construções metálicas." },
-          { codigo: "EF07MA18", desc: "Resolver e elaborar problemas que envolvam a variação de proporcionalidade direta e inversa entre duas grandezas." }
+          { codigo: "EF07MA04", desc: "Resolver e elaborar problemas que envolvam operações com números inteiros." }
         ],
         "8º Ano": [
-          { codigo: "EF08MA01", desc: "Efetuar cálculos com potências de expoentes inteiros e aplicar as propriedades da potenciação." },
-          { codigo: "EF08MA06", desc: "Resolver e elaborar problemas que envolvam cálculo do valor numérico de expressões algébricas." },
-          { codigo: "EF08MA07", desc: "Associar uma equação linear de 1º grau com duas incógnitas a uma reta no plano cartesiano." },
-          { codigo: "EF08MA19", desc: "Resolver e elaborar problemas que envolvam medidas de área de figuras geométricas planas." }
+          { codigo: "EF08MA01", desc: "Efetuar cálculos com potências de expoentes inteiros e aplicar esse conhecimento na representação de números em notação científica." },
+          { codigo: "EF08MA04", desc: "Resolver e elaborar problemas que envolvam cálculo de porcentagens, incluindo juros simples." },
+          { codigo: "EF08MA06", desc: "Resolver e elaborar problemas que envolvam cálculo do valor numérico de expressões algébricas." }
         ],
         "9º Ano": [
-          { codigo: "EF09MA01", desc: "Reconhecer que uma demonstração de uma proposição matemática é um argumento lógico válido." },
-          { codigo: "EF09MA02", desc: "Reconhecer um número irreal como um número que não pode ser expresso como fração a/b." },
-          { codigo: "EF09MA06", desc: "Compreender as funções como relações de dependência unívoca entre duas variáveis e suas representações numérica, algébrica e gráfica." },
-          { codigo: "EF09MA13", desc: "Demonstrar relações métricas do triângulo retângulo, incluindo o teorema de Pitágoras." },
-          { codigo: "EF09MA14", desc: "Resolver e elaborar problemas de aplicação do Teorema de Pitágoras ou das relações de trigonometria no triângulo retângulo." }
+          { codigo: "EF09MA01", desc: "Reconhecer que a resolução de uma equação do 2º grau por meio da fórmula de Bhaskara é aplicável em diversos contextos." },
+          { codigo: "EF09MA03", desc: "Efetuar cálculos com números reais, envolvendo radicais e potências com expoentes fracionários." },
+          { codigo: "EF09MA06", desc: "Compreender as funções como relações de dependência unívoca entre duas variáveis e suas representações numérica, algébrica e gráfica." }
         ]
       },
       Libras: {
         "Educação Infantil": [
-          { codigo: "EI01LS01", desc: "Explorar a atenção visual e a percepção gestual/espacial no contato com pares surdos e adultos sinalizadores." },
-          { codigo: "EI01LS02", desc: "Imitar e reproduzir sinalizações e expressões facial-corporais em contexto lúdico." },
-          { codigo: "EI02LS03", desc: "Interagir através da Libras reconhecendo sinais pessoais e de objetos do cotidiano escolar." }
+          { codigo: "EI01LS01", desc: "Explorar a percepção e atenção visual por meio da comunicação em Libras e apontamentos no ambiente." },
+          { codigo: "EI01LS02", desc: "Expressar necessidades, emoções e desejos utilizando a Língua de Sinais e expressões faciais decorrentes." }
         ],
         "1º Ano": [
-          { codigo: "EF01LS01", desc: "Consolidar aspectos pragmáticos do contato comunicativo visual e turno de fala em Libras." },
-          { codigo: "EF01LS21", desc: "Identificar-se como sujeito surdo e reconhecer elementos da cultura e identidade surda em sua comunidade." },
-          { codigo: "EF01LS05", desc: "Identificar parâmetros fonológicos primários em Libras: Configuração de Mão (CM) e Ponto de Articulação (PA)." }
+          { codigo: "EF01LS01", desc: "Consolidar aspectos pragmáticos e visuais do contato comunicativo na Língua Brasileira de Sinais (Libras)." },
+          { codigo: "EF01LS21", desc: "Identificar-se como sujeito surdo e reconhecer a importância da identidade e da comunidade surda." }
         ],
         "2º Ano": [
-          { codigo: "EF02LS04", desc: "Reconhecer e utilizar adequadamente os parâmetros fonológicos básicos da Libras (CM, PA, M, O, NM)." },
-          { codigo: "EF02LS12", desc: "Compreender e reproduzir histórias contadas em Libras com suporte de imagens e classificadores simples." }
+          { codigo: "EF02LS01", desc: "Compreender o uso dos parâmetros formativos da Libras (Configuração de Mão, Ponto de Articulação e Movimento)." }
         ],
         "3º Ano": [
-          { codigo: "EF03LS06", desc: "Identificar e empregar corretamente os pronomes pessoais e demonstrativos no espaço de sinalização." },
-          { codigo: "EF03LS15", desc: "Participar de conversações em Libras sobre temas variados, respeitando as convenções de contato visual e espacial." }
+          { codigo: "EF03LS01", desc: "Utilizar classificadores simples para descrever formas, tamanhos e posições no espaço sinalizado." }
         ],
         "4º Ano": [
-          { codigo: "EF04LS08", desc: "Utilizar marcadores não manuais (expressões faciais e corporais) para indicar frases interrogativas, exclamativas e negativas." },
-          { codigo: "EF04LS18", desc: "Identificar e utilizar os tipos de verbos em Libras: direcionais/com concordância e sem concordância." }
+          { codigo: "EF04LS01", desc: "Empregar os marcadores não manuais (expressões faciais e corporais) para flexão gramatical e entonação em Libras." }
         ],
         "5º Ano": [
-          { codigo: "EF05LS10", desc: "Produzir narrativas em Libras utilizando classificadores descritivos e de manuseio adequados ao contexto." },
-          { codigo: "EF05LS22", desc: "Analisar piadas, poesias e produções literárias surdas observando os recursos estéticos da sinalização." }
+          { codigo: "EF05LS01", desc: "Produzir narrativas sinalizadas estruturadas com coesão, coerência e uso adequado do espaço de sinalização." }
         ],
         "6º Ano": [
-          { codigo: "EF06LS01", desc: "Compreender o papel do espaço tridimensional na sintaxe da Libras (localização, estabelecimento de referentes e concordância espacial)." },
-          { codigo: "EF06LS14", desc: "Produzir textos sinalizados do gênero expositivo sobre temas científicos e acadêmicos adaptados." }
+          { codigo: "EF06LS01", desc: "Analisar as variações linguísticas em Libras referentes a aspectos regionais, sociais e geracionais." }
         ],
         "7º Ano": [
-          { codigo: "EF07LS03", desc: "Empregar classificadores complexos para descrever ações simultâneas, formatos e arranjos espaciais com precisão." },
-          { codigo: "EF07LS19", desc: "Discutir aspectos da história da educação de surdos (Congresso de Milão, lutas históricas e conquistas linguísticas)." }
+          { codigo: "EF07LS01", desc: "Utilizar classificadores complexos na descrição de ações, movimentos e caracterização de objetos/cenários." }
         ],
         "8º Ano": [
-          { codigo: "EF08LS07", desc: "Analisar as variações linguísticas em Libras (regionais, sociais e geracionais) respeitando a diversidade de sinalizadores." },
-          { codigo: "EF08LS25", desc: "Debater tópicos sociais e éticos em Libras articulando argumentos coerentes e respeitando turnos de fala." }
+          { codigo: "EF08LS01", desc: "Compreender a literatura surda (poesias, piadas, piadas visuais e metáforas em Libras) e suas especificidades culturais." }
         ],
         "9º Ano": [
-          { codigo: "EF09LS02", desc: "Reconhecer e aplicar a incorporação da negação e numerais nos sinais verbais e gramaticais da Libras." },
-          { codigo: "EF09LS12", desc: "Produzir e editar relatos em vídeo (Vlogs/Sinalizadores) em Libras utilizando linguagem formal ou acadêmica." },
-          { codigo: "EF09LS40", desc: "Compreender o conceito de Tradução e Interpretação (Libras/Língua Portuguesa) identificando equivalências conceituais." }
+          { codigo: "EF09LS40", desc: "Debater tópicos de relevância social, acadêmica e científica utilizando o registro formal da Libras e argumentação sinalizada." }
         ]
       },
       PortuguesL2: {
-        "Todas as Etapas": [
-          { codigo: "Não se aplica", desc: "Desenvolver a escrita funcional do Português como Segunda Língua (L2), focando na estrutura sintática padrão (SVO) a partir do suporte em Libras." },
-          { codigo: "Não se aplica", desc: "Compreender textos curtos e informativos em Português escrito utilizando apoio de vocabulário visual e termos-chave." },
-          { codigo: "Não se aplica", desc: "Ampliar o repertório lexical em Língua Portuguesa escrita com correspondência conceitual em Libras." },
-          { codigo: "Não se aplica", desc: "Produzir frases e pequenos parágrafos escritos em Língua Portuguesa observando o uso de conectivos básicos e artigos." }
-        ]
+        "1º Ano": [{ codigo: "Não se aplica", desc: "Desenvolver a percepção da escrita alfabética a partir de estratégias visuais e da Libras como L1." }],
+        "2º Ano": [{ codigo: "Não se aplica", desc: "Expandir o vocabulário escrito da Língua Portuguesa relacionando palavras a sinais e imagens do cotidiano." }],
+        "3º Ano": [{ codigo: "Não se aplica", desc: "Compreender a estrutura de frases curtas em Português escrito e sua correspondência conceitual em Libras." }],
+        "4º Ano": [{ codigo: "Não se aplica", desc: "Identificar a função gramatical de substantivos, verbos e adjetivos em produções escritas em Português (L2)." }],
+        "5º Ano": [{ codigo: "Não se aplica", desc: "Produzir pequenos textos escritos em Português (L2) com autonomia, considerando os aspectos de coesão visual." }],
+        "6º Ano": [{ codigo: "Não se aplica", desc: "Compreender a sintaxe do Português escrito diferenciando-a da estrutura sintática espacial da Libras." }],
+        "7º Ano": [{ codigo: "Não se aplica", desc: "Ler e interpretar textos informativos e instrucionais em Português (L2) com apoio de recursos visuais." }],
+        "8º Ano": [{ codigo: "Não se aplica", desc: "Utilizar conectivos e elementos de coesão textual em produções escritas na Segunda Língua." }],
+        "9º Ano": [{ codigo: "Não se aplica", desc: "Elaborar textos dissertativo-argumentativos simples em Português escrito para estudantes surdos." }]
       }
     };
 
-    // URL PADRÃO DO CABEÇALHO DO REPOSITÓRIO DO CAS (Formato RAW correto)
     const CABECALHO_DEFAULT_URL = "https://raw.githubusercontent.com/rwpo/Plano_de_Aula/main/Cabecalho_CAS.png";
 
-    // Estado da aplicação
-    let todosOsPlanos = {};
-    let modoVisualizacao = 'grid'; // 'grid' ou 'lista'
-    let cabecalhoGlobalUrl = CABECALHO_DEFAULT_URL;
-    let listaDatasAulas = []; // Lista de datas selecionadas para o plano atual
+    let planosCache = {};
+    let modoVisualizacao = 'grid';
+    let habilidadesSelecionadas = []; // Array para múltiplos códigos no plano atual
 
     // -------------------------------------------------------------
-    // EVENTOS E CARREGAMENTO DA PÁGINA
+    // FUNÇÕES DE UTILIDADE E TRATAMENTO DE IMAGEM / GITHUB
     // -------------------------------------------------------------
-    window.onload = function() {
-      atualizarDisciplinasEEtapas();
-      carregarConfiguracaoCabecalho();
-      escutarPlanosFirebase();
-      
-      // Inicializar com uma data padrão (hoje)
-      const dataHoje = new Date().toISOString().split('T')[0];
-      inicializarGerenciadorDatas([dataHoje]);
-    };
-
-    // -------------------------------------------------------------
-    // GERENCIADOR DINÂMICO DE DATAS E CÁLCULO DE AULAS
-    // -------------------------------------------------------------
-    function inicializarGerenciadorDatas(datasArray) {
-      listaDatasAulas = Array.isArray(datasArray) && datasArray.length > 0 
-        ? [...datasArray] 
-        : [new Date().toISOString().split('T')[0]];
-      renderizarCamposDatas();
-    }
-
-    function adicionarCampoData() {
-      const dataHoje = new Date().toISOString().split('T')[0];
-      listaDatasAulas.push(dataHoje);
-      renderizarCamposDatas();
-    }
-
-    function removerCampoData(index) {
-      if (listaDatasAulas.length <= 1) {
-        mostrarToast("O plano de aula deve conter ao menos 1 data registrada.", "error");
-        return;
+    function tratarErroImagemPreview() {
+      const img = document.getElementById('previewCabecalhoForm');
+      const txt = document.getElementById('textNoCabecalho');
+      if (img) img.classList.add('hidden');
+      if (txt) {
+        txt.classList.remove('hidden');
+        txt.innerText = "Erro ao carregar imagem. Verifique se o link é público ou RAW.";
       }
-      listaDatasAulas.splice(index, 1);
-      renderizarCamposDatas();
     }
 
-    function atualizarValorData(index, valor) {
-      listaDatasAulas[index] = valor;
-    }
-
-    function renderizarCamposDatas() {
-      const container = document.getElementById('containerDatasAulas');
-      container.innerHTML = '';
-
-      listaDatasAulas.forEach((data, idx) => {
-        const div = document.createElement('div');
-        div.className = "flex items-center gap-2";
-        div.innerHTML = `
-          <input type="date" required value="${data}" onchange="atualizarValorData(${idx}, this.value)" class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
-          ${listaDatasAulas.length > 1 ? `
-            <button type="button" onclick="removerCampoData(${idx})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors text-xs" title="Remover esta data">
-              <i class="fas fa-trash-alt"></i>
-            </button>
-          ` : ''}
-        `;
-        container.appendChild(div);
-      });
-
-      // Atualiza a badge de contagem de aulas
-      const qtd = listaDatasAulas.length;
-      document.getElementById('badgeQtdAulasCalculada').innerText = `${qtd} ${qtd === 1 ? 'aula planejada' : 'aulas planejadas'}`;
-    }
-
-    // Carregar e sincronizar URL do cabeçalho institucional
-    function carregarConfiguracaoCabecalho() {
-      document.getElementById('cabecalhoUrl').value = CABECALHO_DEFAULT_URL;
-      tratarEAtualizarPreviewCabecalho();
-
-      configRef.on('value', (snapshot) => {
-        const url = snapshot.val();
-        if (url) {
-          cabecalhoGlobalUrl = converterUrlGitHubRaw(url);
-          document.getElementById('cabecalhoUrl').value = cabecalhoGlobalUrl;
-          tratarEAtualizarPreviewCabecalho();
-        }
-      });
-    }
-
-    // Utilitário aperfeiçoado para converter links de visualização do GitHub no arquivo da imagem RAW
-    function converterUrlGitHubRaw(url) {
-      if (!url) return '';
-      let urlLimpa = url.trim();
-      
-      // Converte links do repositório no formato web (github.com/usuario/repo/blob/branch/imagem.png)
-      if (urlLimpa.includes('github.com') && urlLimpa.includes('/blob/')) {
-        urlLimpa = urlLimpa.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+    function converterUrlGithub(url) {
+      if (!url) return "";
+      let trimmed = url.trim();
+      // Converte link do GitHub de web (/blob/) para raw direto
+      if (trimmed.includes("github.com") && trimmed.includes("/blob/")) {
+        trimmed = trimmed.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
       }
-      return urlLimpa;
+      return trimmed;
     }
 
     function tratarEAtualizarPreviewCabecalho() {
-      const inputElem = document.getElementById('cabecalhoUrl');
-      let url = inputElem.value.trim();
-      
-      const rawUrl = converterUrlGitHubRaw(url);
-      if (rawUrl !== url) {
-        inputElem.value = rawUrl;
-        url = rawUrl;
-      }
-
+      const input = document.getElementById('cabecalhoUrl');
       const img = document.getElementById('previewCabecalhoForm');
-      const text = document.getElementById('textNoCabecalho');
-
-      if (url) {
-        img.src = url;
+      const txt = document.getElementById('textNoCabecalho');
+      
+      let urlVal = converterUrlGithub(input.value);
+      if (urlVal) {
+        img.src = urlVal;
         img.classList.remove('hidden');
-        text.classList.add('hidden');
+        txt.classList.add('hidden');
       } else {
         img.classList.add('hidden');
-        text.classList.remove('hidden');
+        txt.classList.remove('hidden');
+        txt.innerText = "Sem imagem de cabeçalho";
       }
     }
 
-    function tratarErroImagemPreview() {
-      const img = document.getElementById('previewCabecalhoForm');
-      const text = document.getElementById('textNoCabecalho');
-      img.classList.add('hidden');
-      text.innerText = "Erro ao carregar imagem do cabeçalho.";
-      text.classList.remove('hidden');
-    }
-
-    // Atualiza opções de etapas de acordo com a disciplina selecionada
-    function atualizarDisciplinasEEtapas() {
-      const disc = document.getElementById('disciplina').value;
-      const selectEtapaElem = document.getElementById('etapa');
-      const alertaL2 = document.getElementById('alertaL2');
+    function mostrarToast(mensagem, tipo = 'sucesso') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
       
-      selectEtapaElem.innerHTML = '';
-
-      if (disc === 'PortuguesL2') {
-        alertaL2.classList.remove('hidden');
+      toastMsg.innerText = mensagem;
+      if (tipo === 'erro') {
+        toastIcon.className = "fas fa-exclamation-circle text-rose-400 text-lg";
       } else {
-        alertaL2.classList.add('hidden');
+        toastIcon.className = "fas fa-check-circle text-emerald-400 text-lg";
       }
 
-      const etapas = Object.keys(matrizCurricular[disc] || {});
-      etapas.forEach(etapa => {
-        const option = document.createElement('option');
-        option.value = etapa;
-        option.textContent = etapa;
-        selectEtapaElem.appendChild(option);
-      });
-
-      carregarHabilidadesDisponiveis();
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
     }
 
-    // Carrega o select com as habilidades correspondentes
-    function carregarHabilidadesDisponiveis() {
-      const disc = document.getElementById('disciplina').value;
-      const etapa = document.getElementById('etapa').value;
-      const selectHab = document.getElementById('selectHabilidade');
+    // -------------------------------------------------------------
+    // GERENCIAMENTO DE MÚLTIPLAS DATAS E AULAS
+    // -------------------------------------------------------------
+    function adicionarCampoData(dataValor = "") {
+      const container = document.getElementById('containerDatasAulas');
+      const div = document.createElement('div');
+      div.className = "flex items-center gap-2";
       
-      selectHab.innerHTML = '';
+      const hoje = new Date().toISOString().split('T')[0];
+      div.innerHTML = `
+        <input type="date" value="${dataValor || hoje}" class="input-data-aula flex-grow px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+        <button type="button" onclick="removerCampoData(this)" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors" title="Remover data">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      `;
+      container.appendChild(div);
+      atualizarContagemAulas();
+    }
 
-      const lista = (matrizCurricular[disc] && matrizCurricular[disc][etapa]) ? matrizCurricular[disc][etapa] : [];
+    function removerCampoData(btn) {
+      const container = document.getElementById('containerDatasAulas');
+      if (container.children.length > 1) {
+        btn.parentElement.remove();
+        atualizarContagemAulas();
+      } else {
+        mostrarToast("O plano deve possuir ao menos 1 data de aula.", "erro");
+      }
+    }
 
-      if(lista.length === 0) {
-        const option = document.createElement('option');
-        option.value = "";
-        option.textContent = "Nenhuma habilidade pré-cadastrada. Digite manualmente abaixo.";
-        selectHab.appendChild(option);
-        configurarCampoHabilidade("", "");
+    function atualizarContagemAulas() {
+      const inputs = document.querySelectorAll('.input-data-aula');
+      const total = inputs.length;
+      const badge = document.getElementById('badgeQtdAulasCalculada');
+      badge.innerText = total === 1 ? "1 aula planejada" : `${total} aulas planejadas`;
+    }
+
+    function obterDatasAulas() {
+      const inputs = document.querySelectorAll('.input-data-aula');
+      let datas = [];
+      inputs.forEach(input => {
+        if (input.value) datas.push(input.value);
+      });
+      return datas;
+    }
+
+    // -------------------------------------------------------------
+    // GERENCIAMENTO DE MÚLTIPLAS HABILIDADES NO PLANO
+    // -------------------------------------------------------------
+    function adicionarHabilidadeAoPlano() {
+      const codigoInput = document.getElementById('codigoHabilidade');
+      const descInput = document.getElementById('descricaoHabilidade');
+      
+      const codigo = codigoInput.value.trim();
+      const desc = descInput.value.trim();
+
+      if (!codigo || !desc) {
+        mostrarToast("Informe ou selecione um código e a descrição da habilidade.", "erro");
         return;
       }
 
-      lista.forEach((item, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = `[${item.codigo}] - ${item.desc.substring(0, 70)}...`;
-        selectHab.appendChild(option);
-      });
-
-      // Seleciona o primeiro item por padrão
-      if(lista.length > 0) {
-        configurarCampoHabilidade(lista[0].codigo, lista[0].desc);
-      }
-    }
-
-    function selecionarHabilidadeMatriz() {
-      const disc = document.getElementById('disciplina').value;
-      const etapa = document.getElementById('etapa').value;
-      const index = document.getElementById('selectHabilidade').value;
-
-      if(index !== "" && matrizCurricular[disc][etapa][index]) {
-        const item = matrizCurricular[disc][etapa][index];
-        configurarCampoHabilidade(item.codigo, item.desc);
-      }
-    }
-
-    function configurarCampoHabilidade(codigo, desc) {
-      document.getElementById('codigoHabilidade').value = codigo;
-      document.getElementById('codigoCurrentDisplay').innerText = codigo || 'N/A';
-      document.getElementById('descricaoHabilidade').value = desc;
-    }
-
-    // -------------------------------------------------------------
-    // OPERAÇÕES COM O FIREBASE (REALTIME DATABASE)
-    // -------------------------------------------------------------
-
-    // Ouve alterações em tempo real no Firebase
-    function escutarPlanosFirebase() {
-      const loadingState = document.getElementById('loadingState');
-      
-      planosRef.on('value', (snapshot) => {
-        todosOsPlanos = snapshot.val() || {};
-        loadingState.classList.add('hidden');
-        renderizarPlanos();
-      }, (error) => {
-        console.error("Erro ao ler do Firebase:", error);
-        mostrarToast("Erro ao conectar com a nuvem do Firebase.", "error");
-        loadingState.classList.add('hidden');
-      });
-    }
-
-    // Salvar/Editar Plano de Aula
-    function salvarPlano(e) {
-      e.preventDefault();
-
-      const id = document.getElementById('planoId').value;
-      let cabecalhoInput = document.getElementById('cabecalhoUrl').value.trim();
-      cabecalhoInput = converterUrlGitHubRaw(cabecalhoInput);
-
-      if (cabecalhoInput) {
-        configRef.set(cabecalhoInput).catch(err => console.log('Aviso config:', err));
+      // Evita duplicatas exatas
+      if (habilidadesSelecionadas.some(h => h.codigo === codigo && h.desc === desc)) {
+        mostrarToast("Esta habilidade já foi adicionada ao plano.", "erro");
+        return;
       }
 
-      const planoData = {
-        cabecalhoUrl: cabecalhoInput || cabecalhoGlobalUrl,
-        professor: document.getElementById('professor').value,
-        disciplina: document.getElementById('disciplina').value,
-        etapa: document.getElementById('etapa').value,
-        datasAulas: listaDatasAulas,
-        quantidadeAulas: listaDatasAulas.length,
-        turma: document.getElementById('turma').value,
-        tema: document.getElementById('tema').value,
-        codigoHabilidade: document.getElementById('codigoHabilidade').value,
-        descricaoHabilidade: document.getElementById('descricaoHabilidade').value,
-        metodologia: document.getElementById('metodologia').value,
-        recursos: document.getElementById('recursos').value,
-        avaliacao: document.getElementById('avaliacao').value,
-        atualizadoEm: new Date().toISOString()
-      };
-
-      const btn = document.getElementById('btnSalvar');
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Salvando...`;
-
-      // Promessa do Firebase com fallback de segurança
-      const acaoFirebase = id 
-        ? planosRef.child(id).update(planoData)
-        : (planoData.criadoEm = new Date().toISOString(), planosRef.push().set(planoData));
-
-      acaoFirebase
-        .then(() => {
-          mostrarToast(id ? "Plano atualizado com sucesso!" : "Novo plano salvo com sucesso!");
-          finalizarSalvar();
-        })
-        .catch((err) => {
-          console.error("Erro no Firebase:", err);
-          mostrarToast("Erro ao comunicar com a nuvem do Firebase.", "error");
-          btn.disabled = false;
-          btn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> Salvar no Firebase`;
-        });
+      habilidadesSelecionadas.push({ codigo, desc });
+      renderizarHabilidadesSelecionadas();
+      
+      // Limpa campos auxiliares
+      codigoInput.value = "";
+      descInput.value = "";
     }
 
-    function finalizarSalvar() {
-      const btn = document.getElementById('btnSalvar');
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> Salvar no Firebase`;
-      limparFormulario();
-      trocarAba('salvos');
+    function removerHabilidadeDoPlano(index) {
+      habilidadesSelecionadas.splice(index, 1);
+      renderizarHabilidadesSelecionadas();
     }
 
-    // Deletar Plano
-    function excluirPlano(id) {
-      if(confirm("Tem certeza que deseja excluir este plano de aula? Essa ação não pode ser desfeita.")) {
-        planosRef.child(id).remove()
-          .then(() => {
-            mostrarToast("Plano removido com sucesso.");
-          })
-          .catch(() => {
-            mostrarToast("Falha ao excluir o plano.", "error");
-          });
+    function renderizarHabilidadesSelecionadas() {
+      const container = document.getElementById('containerHabilidadesSelecionadas');
+      if (habilidadesSelecionadas.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 italic">Nenhuma habilidade adicionada ainda. Selecione acima ou insira manualmente.</p>`;
+        return;
       }
-    }
 
-    // Editar Plano
-    function carregarPlanoParaEdicao(id) {
-      const plano = todosOsPlanos[id];
-      if(!plano) return;
-
-      document.getElementById('planoId').value = id;
-      document.getElementById('cabecalhoUrl').value = plano.cabecalhoUrl || cabecalhoGlobalUrl;
-      tratarEAtualizarPreviewCabecalho();
-
-      document.getElementById('professor').value = plano.professor || '';
-      document.getElementById('disciplina').value = plano.disciplina || 'Matematica';
-      
-      atualizarDisciplinasEEtapas();
-      
-      document.getElementById('etapa').value = plano.etapa || '';
-      
-      // Carregar array de datas ou adaptar campo legado
-      const datas = Array.isArray(plano.datasAulas) ? plano.datasAulas : [plano.dataAula || new Date().toISOString().split('T')[0]];
-      inicializarGerenciadorDatas(datas);
-
-      document.getElementById('turma').value = plano.turma || '';
-      document.getElementById('tema').value = plano.tema || '';
-      document.getElementById('codigoHabilidade').value = plano.codigoHabilidade || '';
-      document.getElementById('descricaoHabilidade').value = plano.descricaoHabilidade || '';
-      document.getElementById('metodologia').value = plano.metodologia || '';
-      document.getElementById('recursos').value = plano.recursos || '';
-      document.getElementById('avaliacao').value = plano.avaliacao || '';
-
-      document.getElementById('formTitle').innerText = "Editar Plano de Aula";
-      trocarAba('novo');
-      fecharModalDetalhes();
-    }
-
-    // -------------------------------------------------------------
-    // MODAL DE DETALHES E IMPRESSÃO
-    // -------------------------------------------------------------
-    function abrirModalDetalhes(id) {
-      const plano = todosOsPlanos[id];
-      if(!plano) return;
-
-      const modal = document.getElementById('modalDetalhes');
-      const conteudo = document.getElementById('modalConteudo');
-
-      const nomeDisc = {
-        Matematica: 'Matemática',
-        Libras: 'Libras',
-        PortuguesL2: 'Português L2'
-      }[plano.disciplina] || plano.disciplina;
-
-      const urlCab = converterUrlGitHubRaw(plano.cabecalhoUrl || cabecalhoGlobalUrl);
-      const cabecalhoHtml = urlCab 
-        ? `<div class="w-full text-center mb-4 pb-3 border-b border-slate-100">
-             <img src="${urlCab}" alt="Cabeçalho da Escola" class="max-h-24 max-w-full mx-auto object-contain">
-           </div>`
-        : '';
-
-      document.getElementById('modalBadgeDisc').innerText = nomeDisc;
-      document.getElementById('modalEtapa').innerText = `${plano.etapa} - Turma: ${plano.turma || 'Não informada'}`;
-
-      const datasFormatadas = Array.isArray(plano.datasAulas) 
-        ? plano.datasAulas.map(formatarData).join(', ')
-        : formatarData(plano.dataAula);
-
-      const totalAulas = plano.quantidadeAulas || (Array.isArray(plano.datasAulas) ? plano.datasAulas.length : 1);
-
-      conteudo.innerHTML = `
-        ${cabecalhoHtml}
-        <div class="border-b pb-4">
-          <h2 class="text-xl font-bold text-slate-800">${plano.tema}</h2>
-          <p class="text-xs text-slate-500 mt-1">
-            <strong>Professor:</strong> ${plano.professor} &bull; 
-            <strong>Total de Aulas:</strong> <span class="text-brand-600 font-bold">${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'}</span> &bull; 
-            <strong>Data(s):</strong> ${datasFormatadas} &bull; 
-            <strong>Código:</strong> <span class="font-mono font-bold">${plano.codigoHabilidade}</span>
-          </p>
+      container.innerHTML = habilidadesSelecionadas.map((item, idx) => `
+        <div class="flex items-start justify-between gap-3 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
+          <div class="flex items-start gap-2">
+            <span class="font-mono bg-brand-100 text-brand-700 px-2 py-0.5 rounded font-bold whitespace-nowrap">${item.codigo}</span>
+            <span class="text-slate-700">${item.desc}</span>
+          </div>
+          <button type="button" onclick="removerHabilidadeDoPlano(${idx})" class="text-slate-400 hover:text-rose-600 p-1">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-
-        <div class="space-y-4 text-sm">
-          <div>
-            <h4 class="font-bold text-xs uppercase text-brand-600 tracking-wider mb-1">Objetivos de Aprendizagem</h4>
-            <p class="text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100">${plano.descricaoHabilidade}</p>
-          </div>
-
-          <div>
-            <h4 class="font-bold text-xs uppercase text-brand-600 tracking-wider mb-1">Procedimentos Didáticos / Metodologia</h4>
-            <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100">${plano.metodologia}</p>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <h4 class="font-bold text-xs uppercase text-brand-600 tracking-wider mb-1">Recursos Didáticos</h4>
-              <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100">${plano.recursos}</p>
-            </div>
-            <div>
-              <h4 class="font-bold text-xs uppercase text-brand-600 tracking-wider mb-1">Avaliação</h4>
-              <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100">${plano.avaliacao}</p>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.getElementById('btnEditarModal').onclick = () => carregarPlanoParaEdicao(id);
-      document.getElementById('btnImprimirModal').onclick = () => prepararEImprimir(plano);
-
-      modal.classList.remove('hidden');
-    }
-
-    function fecharModalDetalhes() {
-      document.getElementById('modalDetalhes').classList.add('hidden');
-    }
-
-    function prepararEImprimir(plano) {
-      const urlCabecalho = converterUrlGitHubRaw(plano.cabecalhoUrl || cabecalhoGlobalUrl);
-      const cabecalhoContainer = document.getElementById('printCabecalhoContainer');
-      const cabecalhoImg = document.getElementById('printCabecalhoImg');
-
-      if (urlCabecalho) {
-        cabecalhoImg.src = urlCabecalho;
-        cabecalhoContainer.classList.remove('hidden');
-      } else {
-        cabecalhoContainer.classList.add('hidden');
-      }
-
-      const datasFormatadas = Array.isArray(plano.datasAulas) 
-        ? plano.datasAulas.map(formatarData).join(', ')
-        : formatarData(plano.dataAula);
-
-      const totalAulas = plano.quantidadeAulas || (Array.isArray(plano.datasAulas) ? plano.datasAulas.length : 1);
-
-      document.getElementById('printProfessor').innerText = plano.professor;
-      document.getElementById('printData').innerText = datasFormatadas;
-      document.getElementById('printDisciplina').innerText = plano.disciplina;
-      document.getElementById('printEtapa').innerText = plano.etapa;
-      document.getElementById('printQuantidadeAulas').innerText = `${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'}`;
-      document.getElementById('printTurma').innerText = plano.turma || '-';
-      document.getElementById('printTema').innerText = plano.tema;
-      document.getElementById('printCodigo').innerText = plano.codigoHabilidade;
-      
-      document.getElementById('printHabilidade').innerText = plano.descricaoHabilidade;
-      document.getElementById('printMetodologia').innerText = plano.metodologia;
-      document.getElementById('printRecursos').innerText = plano.recursos;
-      document.getElementById('printAvaliacao').innerText = plano.avaliacao;
-
-      window.print();
+      `).join('');
     }
 
     // -------------------------------------------------------------
-    // UTILITÁRIOS E NAVEGAÇÃO DE ABAS
+    // NAVEGAÇÃO DE ABAS
     // -------------------------------------------------------------
     function trocarAba(aba) {
       const abaNovo = document.getElementById('abaNovo');
@@ -1039,192 +743,478 @@
         abaSalvos.classList.remove('hidden');
         navSalvos.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 bg-white text-brand-700 shadow-sm";
         navNovo.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 text-white hover:bg-white/10";
+        carregarPlanosFirebase();
       }
     }
 
-    // Mudança de modo de visualização (Grid ou Lista)
-    function mudarVisualizacao(modo) {
-      modoVisualizacao = modo;
-      const btnGrid = document.getElementById('btnModoGrid');
-      const btnLista = document.getElementById('btnModoLista');
+    // -------------------------------------------------------------
+    // MATRIZ CURRICULAR E FORMULÁRIO DINÂMICO
+    // -------------------------------------------------------------
+    function atualizarDisciplinasEEtapas() {
+      const discSelect = document.getElementById('disciplina').value;
+      const etapaSelect = document.getElementById('etapa');
+      const alertaL2 = document.getElementById('alertaL2');
+      
+      etapaSelect.innerHTML = "";
 
-      if(modo === 'grid') {
-        btnGrid.className = "p-1.5 rounded-lg text-brand-600 bg-white shadow-sm";
-        btnLista.className = "p-1.5 rounded-lg text-slate-400 hover:text-slate-600";
+      if (discSelect === 'PortuguesL2') {
+        alertaL2.classList.remove('hidden');
       } else {
-        btnLista.className = "p-1.5 rounded-lg text-brand-600 bg-white shadow-sm";
-        btnGrid.className = "p-1.5 rounded-lg text-slate-400 hover:text-slate-600";
+        alertaL2.classList.add('hidden');
       }
-      renderizarPlanos();
+
+      const etapas = Object.keys(matrizCurricular[discSelect] || {});
+      etapas.forEach(etapa => {
+        const opt = document.createElement('option');
+        opt.value = etapa;
+        opt.textContent = etapa;
+        etapaSelect.appendChild(opt);
+      });
+
+      carregarHabilidadesDisponiveis();
     }
 
-    // Filtragem de planos na busca/categoria
-    function filtrarPlanos() {
-      renderizarPlanos();
+    function carregarHabilidadesDisponiveis() {
+      const discSelect = document.getElementById('disciplina').value;
+      const etapaSelect = document.getElementById('etapa').value;
+      const selectHab = document.getElementById('selectHabilidade');
+      const codigoInput = document.getElementById('codigoHabilidade');
+      const descInput = document.getElementById('descricaoHabilidade');
+
+      selectHab.innerHTML = `<option value="">Selecione na matriz curricular...</option>`;
+
+      if (discSelect === 'PortuguesL2') {
+        codigoInput.value = "Não se aplica";
+        descInput.value = matrizCurricular.PortuguesL2[etapaSelect]?.[0]?.desc || "";
+        selectHab.disabled = true;
+        return;
+      } else {
+        selectHab.disabled = false;
+      }
+
+      const lista = matrizCurricular[discSelect]?.[etapaSelect] || [];
+      lista.forEach((item, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = `[${item.codigo}] ${item.desc.substring(0, 75)}...`;
+        selectHab.appendChild(opt);
+      });
+
+      if (lista.length > 0) {
+        selectHab.selectedIndex = 0;
+        selecionarHabilidadeMatriz();
+      } else {
+        codigoInput.value = "";
+        descInput.value = "";
+      }
     }
 
-    // Renderizar lista de planos
+    function selecionarHabilidadeMatriz() {
+      const discSelect = document.getElementById('disciplina').value;
+      const etapaSelect = document.getElementById('etapa').value;
+      const selectHab = document.getElementById('selectHabilidade');
+      const idx = selectHab.value;
+
+      if (idx === "") return;
+
+      const item = matrizCurricular[discSelect]?.[etapaSelect]?.[idx];
+      if (item) {
+        document.getElementById('codigoHabilidade').value = item.codigo;
+        document.getElementById('descricaoHabilidade').value = item.desc;
+      }
+    }
+
+    function limparFormulario() {
+      document.getElementById('formPlano').reset();
+      document.getElementById('planoId').value = "";
+      document.getElementById('formTitle').innerText = "Criar Novo Plano de Aula";
+      document.getElementById('cabecalhoUrl').value = CABECALHO_DEFAULT_URL;
+      habilidadesSelecionadas = [];
+      renderizarHabilidadesSelecionadas();
+      
+      const containerDatas = document.getElementById('containerDatasAulas');
+      containerDatas.innerHTML = "";
+      adicionarCampoData();
+      tratarEAtualizarPreviewCabecalho();
+      atualizarDisciplinasEEtapas();
+    }
+
+    // -------------------------------------------------------------
+    // INTEGRAÇÃO FIREBASE: SALVAR E CARREGAR PLANOS
+    // -------------------------------------------------------------
+    function salvarPlano(event) {
+      event.preventDefault();
+
+      if (habilidadesSelecionadas.length === 0) {
+        mostrarToast("Adicione pelo menos uma habilidade/objetivo ao plano.", "erro");
+        return;
+      }
+
+      const id = document.getElementById('planoId').value || 'plano_' + Date.now();
+      const cabecalhoInputVal = document.getElementById('cabecalhoUrl').value.trim() || CABECALHO_DEFAULT_URL;
+      const cabecalhoFinal = converterUrlGithub(cabecalhoInputVal);
+
+      const datas = obterDatasAulas();
+
+      const dadosPlano = {
+        id: id,
+        cabecalhoUrl: cabecalhoFinal,
+        professor: document.getElementById('professor').value.trim(),
+        disciplina: document.getElementById('disciplina').value,
+        etapa: document.getElementById('etapa').value,
+        turma: document.getElementById('turma').value.trim(),
+        tema: document.getElementById('tema').value.trim(),
+        datasAulas: datas,
+        quantidadeAulas: datas.length,
+        habilidades: habilidadesSelecionadas, // Array de múltiplos códigos
+        metodologia: document.getElementById('metodologia').value.trim(),
+        recursos: document.getElementById('recursos').value.trim(),
+        avaliacao: document.getElementById('avaliacao').value.trim(),
+        atualizadoEm: new Date().toISOString()
+      };
+
+      const btnSalvar = document.getElementById('btnSalvar');
+      btnSalvar.disabled = true;
+      btnSalvar.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Salvando no Firebase...`;
+
+      // Salva globalmente o cabeçalho configurado
+      configRef.set(cabecalhoFinal).catch(() => {});
+
+      planosRef.child(id).set(dadosPlano)
+        .then(() => {
+          mostrarToast("Plano de aula salvo com sucesso!");
+          limparFormulario();
+          trocarAba('salvos');
+        })
+        .catch((error) => {
+          console.error("Erro ao salvar:", error);
+          mostrarToast("Erro ao salvar no Firebase. Verifique sua conexão.", "erro");
+        })
+        .finally(() => {
+          btnSalvar.disabled = false;
+          btnSalvar.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> Salvar no Firebase`;
+        });
+    }
+
+    function carregarPlanosFirebase() {
+      const loadingState = document.getElementById('loadingState');
+      const emptyState = document.getElementById('emptyState');
+      const containerPlanos = document.getElementById('containerPlanos');
+
+      loadingState.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+      containerPlanos.innerHTML = "";
+
+      planosRef.once('value')
+        .then((snapshot) => {
+          loadingState.classList.add('hidden');
+          planosCache = snapshot.val() || {};
+          renderizarPlanos();
+        })
+        .catch((error) => {
+          console.error("Erro ao carregar:", error);
+          loadingState.classList.add('hidden');
+          emptyState.classList.remove('hidden');
+          mostrarToast("Erro ao carregar do Firebase.", "erro");
+        });
+    }
+
     function renderizarPlanos() {
       const container = document.getElementById('containerPlanos');
       const emptyState = document.getElementById('emptyState');
       const busca = document.getElementById('buscaInput').value.toLowerCase();
       const filtroDisc = document.getElementById('filtroDisciplina').value;
 
-      container.innerHTML = '';
-      
-      const chaves = Object.keys(todosOsPlanos);
-      let planosFiltrados = chaves.map(k => ({ id: k, ...todosOsPlanos[k] }));
+      container.innerHTML = "";
 
-      // Atualiza o contador total no cabeçalho
-      document.getElementById('badgeCount').innerText = chaves.length;
+      const chaves = Object.keys(planosCache);
+      let filtrados = chaves.map(k => planosCache[k]).filter(plano => {
+        const matchDisc = filtroDisc === 'todos' || plano.disciplina === filtroDisc;
+        const textoBusca = `${plano.professor} ${plano.tema} ${plano.turma}`.toLowerCase();
+        const matchBusca = textoBusca.includes(busca) || (plano.habilidades && plano.habilidades.some(h => h.codigo.toLowerCase().includes(busca)));
+        return matchDisc && matchBusca;
+      });
 
-      // Aplicar filtro por disciplina
-      if (filtroDisc !== 'todos') {
-        planosFiltrados = planosFiltrados.filter(p => p.disciplina === filtroDisc);
-      }
+      document.getElementById('badgeCount').innerText = filtrados.length;
 
-      // Aplicar filtro de busca por texto
-      if (busca) {
-        planosFiltrados = planosFiltrados.filter(p => 
-          (p.professor && p.professor.toLowerCase().includes(busca)) ||
-          (p.tema && p.tema.toLowerCase().includes(busca)) ||
-          (p.codigoHabilidade && p.codigoHabilidade.toLowerCase().includes(busca))
-        );
-      }
-
-      if (planosFiltrados.length === 0) {
+      if (filtrados.length === 0) {
         emptyState.classList.remove('hidden');
         return;
       }
 
       emptyState.classList.add('hidden');
 
-      if (modoVisualizacao === 'grid') {
-        container.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
-      } else {
-        container.className = "flex flex-col gap-4";
-      }
-
-      planosFiltrados.forEach(plano => {
-        const nomeDisc = {
-          Matematica: 'Matemática',
-          Libras: 'Libras',
-          PortuguesL2: 'Português L2'
-        }[plano.disciplina] || plano.disciplina;
-
-        const totalAulas = plano.quantidadeAulas || (Array.isArray(plano.datasAulas) ? plano.datasAulas.length : 1);
-        const dataExibicao = Array.isArray(plano.datasAulas) && plano.datasAulas.length > 0 
-          ? formatarData(plano.datasAulas[0]) + (plano.datasAulas.length > 1 ? ` (+${plano.datasAulas.length - 1})` : '')
-          : formatarData(plano.dataAula);
-
+      filtrados.forEach(plano => {
         const card = document.createElement('div');
         
+        const discNomes = { Matematica: "Matemática", Libras: "Libras", PortuguesL2: "Português L2" };
+        const discBadgeColor = { Matematica: "bg-sky-100 text-sky-800", Libras: "bg-purple-100 text-purple-800", PortuguesL2: "bg-amber-100 text-amber-800" };
+
+        const codigosStr = plano.habilidades ? plano.habilidades.map(h => h.codigo).join(', ') : (plano.codigoHabilidade || 'N/A');
+
         if (modoVisualizacao === 'grid') {
           card.className = "bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between";
           card.innerHTML = `
             <div>
-              <div class="flex justify-between items-start mb-3">
-                <span class="text-xs px-2.5 py-1 rounded-md font-semibold bg-brand-50 text-brand-700 border border-brand-100">${nomeDisc}</span>
-                <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${plano.codigoHabilidade || 'N/A'}</span>
+              <div class="flex justify-between items-start gap-2 mb-3">
+                <span class="text-xs px-2.5 py-1 rounded-lg font-bold ${discBadgeColor[plano.disciplina] || 'bg-slate-100 text-slate-800'}">${discNomes[plano.disciplina] || plano.disciplina}</span>
+                <span class="text-xs text-slate-400 font-medium">${plano.etapa}</span>
               </div>
-              <h3 class="font-bold text-slate-800 text-base mb-1 line-clamp-2">${plano.tema}</h3>
-              <p class="text-xs text-slate-500 mb-2"><i class="fas fa-user-circle mr-1"></i>${plano.professor} &bull; ${plano.etapa}</p>
-              <div class="mb-4">
-                <span class="inline-block text-[11px] font-medium bg-cyan-50 text-cyan-700 px-2 py-0.5 rounded border border-cyan-100">
-                  <i class="fas fa-layer-group mr-1"></i>${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'}
-                </span>
+              <h3 class="font-bold text-slate-800 text-base mb-1 line-clamp-1">${plano.tema}</h3>
+              <p class="text-xs text-slate-500 mb-4 flex items-center gap-1.5"><i class="fas fa-user text-slate-400"></i> ${plano.professor}</p>
+              
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4 text-xs space-y-1">
+                <div class="flex justify-between text-slate-600">
+                  <span><strong>Turma:</strong> ${plano.turma || 'Não informada'}</span>
+                  <span class="text-brand-600 font-bold">${plano.quantidadeAulas || 1} aula(s)</span>
+                </div>
+                <div class="text-slate-500 truncate"><strong>Códigos:</strong> ${codigosStr}</div>
               </div>
-              <p class="text-xs text-slate-600 line-clamp-3 bg-slate-50 p-2.5 rounded-lg mb-4 border border-slate-100">${plano.descricaoHabilidade}</p>
             </div>
-            <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs">
-              <span class="text-slate-400"><i class="far fa-calendar mr-1"></i>${dataExibicao}</span>
-              <div class="flex gap-2">
-                <button onclick="abrirModalDetalhes('${plano.id}')" class="p-2 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors" title="Visualizar / Imprimir">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button onclick="carregarPlanoParaEdicao('${plano.id}')" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="excluirPlano('${plano.id}')" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Excluir">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+              <button onclick="abrirModalDetalhes('${plano.id}')" class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+                <i class="fas fa-eye"></i> Visualizar / PDF
+              </button>
+              <div class="flex items-center gap-1">
+                <button onclick="editarPlano('${plano.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
+                <button onclick="excluirPlano('${plano.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg" title="Excluir"><i class="fas fa-trash-alt"></i></button>
               </div>
             </div>
           `;
         } else {
-          card.className = "bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
+          card.className = "bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 col-span-full";
           card.innerHTML = `
-            <div class="flex-grow">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs px-2 py-0.5 rounded font-semibold bg-brand-50 text-brand-700">${nomeDisc}</span>
-                <span class="text-xs font-mono font-bold text-slate-500">${plano.codigoHabilidade || 'N/A'}</span>
-                <span class="text-xs text-slate-400">&bull; ${dataExibicao} (${totalAulas} ${totalAulas === 1 ? 'aula' : 'aulas'})</span>
+            <div class="flex items-start gap-4">
+              <div class="p-3 bg-brand-50 text-brand-600 rounded-xl font-bold text-center min-w-[70px]">
+                <div class="text-xs uppercase">${plano.disciplina}</div>
+                <div class="text-sm">${plano.etapa}</div>
               </div>
-              <h3 class="font-bold text-slate-800 text-sm">${plano.tema}</h3>
-              <p class="text-xs text-slate-500">Prof: ${plano.professor} (${plano.etapa})</p>
+              <div>
+                <h3 class="font-bold text-slate-800 text-base">${plano.tema}</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Prof: <strong>${plano.professor}</strong> | Turma: <strong>${plano.turma || 'N/A'}</strong> | Aulas: <strong>${plano.quantidadeAulas || 1}</strong></p>
+                <p class="text-xs font-mono text-brand-700 mt-1">Códigos: ${codigosStr}</p>
+              </div>
             </div>
-            <div class="flex items-center gap-2 self-end sm:self-center">
-              <button onclick="abrirModalDetalhes('${plano.id}')" class="px-3 py-1.5 text-xs text-brand-600 bg-brand-50 hover:bg-brand-100 font-medium rounded-lg">
-                <i class="fas fa-eye mr-1"></i> Ver
-              </button>
-              <button onclick="carregarPlanoParaEdicao('${plano.id}')" class="px-3 py-1.5 text-xs text-slate-600 bg-slate-100 hover:bg-slate-200 font-medium rounded-lg">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button onclick="excluirPlano('${plano.id}')" class="px-3 py-1.5 text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 font-medium rounded-lg">
-                <i class="fas fa-trash-alt"></i>
-              </button>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <button onclick="abrirModalDetalhes('${plano.id}')" class="px-3 py-1.5 text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg">Visualizar</button>
+              <button onclick="editarPlano('${plano.id}')" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Editar</button>
+              <button onclick="excluirPlano('${plano.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"><i class="fas fa-trash-alt"></i></button>
             </div>
           `;
         }
-
         container.appendChild(card);
       });
     }
 
-    function limparFormulario() {
-      document.getElementById('planoId').value = '';
-      document.getElementById('formPlano').reset();
-      document.getElementById('formTitle').innerText = "Criar Novo Plano de Aula";
-      
-      const dataHoje = new Date().toISOString().split('T')[0];
-      inicializarGerenciadorDatas([dataHoje]);
+    function mudarVisualizacao(modo) {
+      modoVisualizacao = modo;
+      const btnGrid = document.getElementById('btnModoGrid');
+      const btnLista = document.getElementById('btnModoLista');
+      const container = document.getElementById('containerPlanos');
 
-      if (cabecalhoGlobalUrl) {
-        document.getElementById('cabecalhoUrl').value = cabecalhoGlobalUrl;
-        tratarEAtualizarPreviewCabecalho();
+      if (modo === 'grid') {
+        btnGrid.className = "p-1.5 rounded-lg text-brand-600 bg-white shadow-sm";
+        btnLista.className = "p-1.5 rounded-lg text-slate-400 hover:text-slate-600";
+        container.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+      } else {
+        btnLista.className = "p-1.5 rounded-lg text-brand-600 bg-white shadow-sm";
+        btnGrid.className = "p-1.5 rounded-lg text-slate-400 hover:text-slate-600";
+        container.className = "grid grid-cols-1 gap-4";
       }
+      renderizarPlanos();
+    }
+
+    function filtrarPlanos() {
+      renderizarPlanos();
+    }
+
+    // -------------------------------------------------------------
+    // EDIÇÃO E EXCLUSÃO DE PLANOS
+    // -------------------------------------------------------------
+    function editarPlano(id) {
+      const plano = planosCache[id];
+      if (!plano) return;
+
+      trocarAba('novo');
+      document.getElementById('formTitle').innerText = "Editar Plano de Aula";
+      document.getElementById('planoId').value = plano.id;
+      document.getElementById('cabecalhoUrl').value = plano.cabecalhoUrl || CABECALHO_DEFAULT_URL;
+      document.getElementById('professor').value = plano.professor || "";
+      document.getElementById('disciplina').value = plano.disciplina || "Matematica";
       
       atualizarDisciplinasEEtapas();
-    }
+      document.getElementById('etapa').value = plano.etapa || "";
+      carregarHabilidadesDisponiveis();
 
-    function formatarData(dataStr) {
-      if(!dataStr) return '-';
-      const partes = dataStr.split('-');
-      if(partes.length === 3) {
-        return `${partes[2]}/${partes[1]}/${partes[0]}`;
-      }
-      return dataStr;
-    }
+      document.getElementById('turma').value = plano.turma || "";
+      document.getElementById('tema').value = plano.tema || "";
 
-    function mostrarToast(mensagem, tipo = 'success') {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toastMsg');
-      const toastIcon = document.getElementById('toastIcon');
-
-      toastMsg.innerText = mensagem;
-      
-      if(tipo === 'error') {
-        toastIcon.className = "fas fa-exclamation-circle text-rose-400 text-lg";
+      // Restaurar datas de aula
+      const containerDatas = document.getElementById('containerDatasAulas');
+      containerDatas.innerHTML = "";
+      if (plano.datasAulas && plano.datasAulas.length > 0) {
+        plano.datasAulas.forEach(d => adicionarCampoData(d));
       } else {
-        toastIcon.className = "fas fa-check-circle text-emerald-400 text-lg";
+        adicionarCampoData(plano.data || new Date().toISOString().split('T')[0]);
       }
 
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3500);
+      // Restaurar habilidades múltiplas
+      habilidadesSelecionadas = [];
+      if (plano.habilidades && Array.isArray(plano.habilidades)) {
+        habilidadesSelecionadas = [...plano.habilidades];
+      } else if (plano.codigoHabilidade) {
+        habilidadesSelecionadas = [{ codigo: plano.codigoHabilidade, desc: plano.descricaoHabilidade || "" }];
+      }
+      renderizarHabilidadesSelecionadas();
+
+      document.getElementById('metodologia').value = plano.metodologia || "";
+      document.getElementById('recursos').value = plano.recursos || "";
+      document.getElementById('avaliacao').value = plano.avaliacao || "";
+
+      tratarEAtualizarPreviewCabecalho();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    function excluirPlano(id) {
+      if (confirm("Tem certeza que deseja excluir este plano de aula permanentemente do Firebase?")) {
+        planosRef.child(id).remove()
+          .then(() => {
+            mostrarToast("Plano excluído com sucesso!");
+            delete planosCache[id];
+            renderizarPlanos();
+          })
+          .catch(() => {
+            mostrarToast("Erro ao excluir plano.", "erro");
+          });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // MODAL DE DETALHES E IMPRESSÃO / PDF
+    // -------------------------------------------------------------
+    function abrirModalDetalhes(id) {
+      const plano = planosCache[id];
+      if (!plano) return;
+
+      const discNomes = { Matematica: "Matemática", Libras: "Libras", PortuguesL2: "Português L2" };
+      document.getElementById('modalBadgeDisc').innerText = discNomes[plano.disciplina] || plano.disciplina;
+      document.getElementById('modalEtapa').innerText = plano.etapa;
+
+      const habsHtml = plano.habilidades ? plano.habilidades.map(h => `
+        <div class="mb-2 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+          <span class="font-mono font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded mr-2">${h.codigo}</span>
+          <span class="text-slate-700">${h.desc}</span>
+        </div>
+      `).join('') : `<p><strong>${plano.codigoHabilidade || 'N/A'}:</strong> ${plano.descricaoHabilidade || '-'}</p>`;
+
+      const datasStr = plano.datasAulas ? plano.datasAulas.join(', ') : (plano.data || 'N/A');
+
+      document.getElementById('modalConteudo').innerHTML = `
+        <div class="space-y-4 text-sm">
+          ${plano.cabecalhoUrl ? `<div class="text-center pb-3 border-b"><img src="${plano.cabecalhoUrl}" class="max-h-24 mx-auto object-contain"></div>` : ''}
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">${plano.tema}</h3>
+            <p class="text-xs text-slate-500">Professor(a): <strong>${plano.professor}</strong> | Turma: <strong>${plano.turma || 'N/A'}</strong></p>
+          </div>
+          <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl text-xs">
+            <div><strong>Componente:</strong> ${discNomes[plano.disciplina]}</div>
+            <div><strong>Ano/Etapa:</strong> ${plano.etapa}</div>
+            <div><strong>Total de Aulas:</strong> ${plano.quantidadeAulas || 1} aula(s)</div>
+            <div><strong>Data(s):</strong> ${datasStr}</div>
+          </div>
+          <div>
+            <h4 class="font-bold text-xs uppercase text-slate-600 mb-1">Habilidades / Objetivos</h4>
+            ${habsHtml}
+          </div>
+          <div>
+            <h4 class="font-bold text-xs uppercase text-slate-600 mb-1">Metodologia & Procedimentos</h4>
+            <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-xl">${plano.metodologia}</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <h4 class="font-bold text-xs uppercase text-slate-600 mb-1">Recursos</h4>
+              <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-xl">${plano.recursos}</p>
+            </div>
+            <div>
+              <h4 class="font-bold text-xs uppercase text-slate-600 mb-1">Avaliação</h4>
+              <p class="text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-xl">${plano.avaliacao}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Configurar botões de modal
+      document.getElementById('btnEditarModal').onclick = () => {
+        fecharModalDetalhes();
+        editarPlano(plano.id);
+      };
+
+      document.getElementById('btnImprimirModal').onclick = () => {
+        prepararAreaImpressao(plano);
+        window.print();
+      };
+
+      document.getElementById('modalDetalhes').classList.remove('hidden');
+    }
+
+    function fecharModalDetalhes() {
+      document.getElementById('modalDetalhes').classList.add('hidden');
+    }
+
+    function prepararAreaImpressao(plano) {
+      const discNomes = { Matematica: "Matemática", Libras: "Libras", PortuguesL2: "Português L2" };
+      
+      // Imagem de cabeçalho no PDF/Print
+      const imgContainer = document.getElementById('printCabecalhoContainer');
+      const imgEl = document.getElementById('printCabecalhoImg');
+      if (plano.cabecalhoUrl) {
+        imgEl.src = plano.cabecalhoUrl;
+        imgContainer.classList.remove('hidden');
+      } else {
+        imgContainer.classList.add('hidden');
+      }
+
+      const habsPrint = plano.habilidades ? plano.habilidades.map(h => `
+        <div class="mb-1"><strong>[${h.codigo}]</strong> ${h.desc}</div>
+      `).join('') : `<strong>[${plano.codigoHabilidade}]</strong> ${plano.descricaoHabilidade}`;
+
+      document.getElementById('printSubtitulo').innerText = `${discNomes[plano.disciplina] || plano.disciplina} - ${plano.etapa}`;
+      document.getElementById('printCodigo').innerText = plano.habilidades ? plano.habilidades.map(h => h.codigo).join(', ') : plano.codigoHabilidade;
+      document.getElementById('printProfessor').innerText = plano.professor;
+      document.getElementById('printDisciplina').innerText = discNomes[plano.disciplina] || plano.disciplina;
+      document.getElementById('printEtapa').innerText = plano.etapa;
+      document.getElementById('printTurma').innerText = plano.turma || 'Não informada';
+      document.getElementById('printQuantidadeAulas').innerText = `${plano.quantidadeAulas || 1} aula(s)`;
+      document.getElementById('printData').innerText = plano.datasAulas ? plano.datasAulas.join(', ') : (plano.data || '-');
+      document.getElementById('printTema').innerText = plano.tema;
+      document.getElementById('printHabilidade').innerHTML = habsPrint;
+      document.getElementById('printMetodologia').innerText = plano.metodologia;
+      document.getElementById('printRecursos').innerText = plano.recursos;
+      document.getElementById('printAvaliacao').innerText = plano.avaliacao;
+    }
+
+    // -------------------------------------------------------------
+    // INICIALIZAÇÃO DA PÁGINA
+    // -------------------------------------------------------------
+    window.onload = function() {
+      const inputCab = document.getElementById('cabecalhoUrl');
+      
+      // Carregar url padrão do cabeçalho ou buscar do Firebase config
+      configRef.once('value').then(snapshot => {
+        const savedUrl = snapshot.val();
+        inputCab.value = savedUrl || CABECALHO_DEFAULT_URL;
+        tratarEAtualizarPreviewCabecalho();
+      }).catch(() => {
+        inputCab.value = CABECALHO_DEFAULT_URL;
+        tratarEAtualizarPreviewCabecalho();
+      });
+
+      atualizarDisciplinasEEtapas();
+      
+      // Adicionar 1 data de aula inicial no formulário
+      adicionarCampoData();
+    };
   </script>
 </body>
 </html>
