@@ -776,15 +776,27 @@
         const badgeDot = document.getElementById('dotStatusFirebase');
         const badgeTxt = document.getElementById('txtStatusFirebase');
 
-        // Consulta leve utilizando limitToFirst(1) compatível com o Firebase JS SDK
-        db.ref('matrizCurricularBNCC').limitToFirst(1).once('value')
+        db.ref('matrizCurricularBNCC/Matematica').once('value')
           .then(snapshot => {
-            if (snapshot.exists()) {
+            const data = snapshot.val();
+            let totalNoBanco = 0;
+            if (data) {
+              Object.keys(data).forEach(etapa => {
+                if (Array.isArray(data[etapa])) {
+                  totalNoBanco += data[etapa].length;
+                }
+              });
+            }
+
+            if (totalNoBanco >= 247) {
               badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-              badgeTxt.textContent = "Firebase Sincronizado (247 Habilidades)";
-            } else {
+              badgeTxt.textContent = `Firebase Atualizado (${totalNoBanco}/247 Habilidades)`;
+            } else if (totalNoBanco > 0) {
               badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
-              badgeTxt.textContent = "Matriz Pendente (0/247)";
+              badgeTxt.textContent = `Parcial (${totalNoBanco}/247 Habilidades)`;
+            } else {
+              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-rose-400";
+              badgeTxt.textContent = "Matriz Não Enviada (0/247)";
             }
           })
           .catch(() => {
@@ -798,36 +810,60 @@
         const badgeTxt = document.getElementById('txtStatusFirebase');
         const badgeDot = document.getElementById('dotStatusFirebase');
         
-        let totalMatematica = 0;
-        Object.keys(baseMatrizCurricular.Matematica).forEach(etapa => {
-          totalMatematica += baseMatrizCurricular.Matematica[etapa].length;
-        });
+        // 1. Verificar antes no Firebase se os códigos já estão presentes
+        btnText.textContent = "Verificando Firebase...";
+        
+        db.ref('matrizCurricularBNCC/Matematica').once('value')
+          .then(snapshot => {
+            const data = snapshot.val();
+            let totalNoBanco = 0;
+            if (data) {
+              Object.keys(data).forEach(etapa => {
+                if (Array.isArray(data[etapa])) {
+                  totalNoBanco += data[etapa].length;
+                }
+              });
+            }
 
-        btnText.textContent = `Enviando (0/${totalMatematica})...`;
-        badgeTxt.textContent = `Sincronizando no Firebase...`;
-        badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+            // Se já tiver 247 ou mais habilidades de Matemática cadastradas, impede a subida
+            if (totalNoBanco >= 247) {
+              btnText.textContent = "Subir Matriz Curricular";
+              badgeTxt.textContent = `Firebase Atualizado (${totalNoBanco} Habilidades)`;
+              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+              alertPersonalizado(`A matriz já está 100% atualizada no Firebase (${totalNoBanco} habilidades ativas). Não é necessário fazer nova transmissão!`);
+              return;
+            }
 
-        let salvos = 0;
-        const updates = {};
-        updates['/matrizCurricularBNCC'] = baseMatrizCurricular;
+            // 2. Se não tiver todas, realiza o upload da matriz completa
+            let totalMatematica = 0;
+            Object.keys(baseMatrizCurricular.Matematica).forEach(etapa => {
+              totalMatematica += baseMatrizCurricular.Matematica[etapa].length;
+            });
 
-        db.ref().update(updates)
-          .then(() => {
-            btnText.textContent = "Subir Matriz Curricular";
-            badgeTxt.textContent = `Firebase Sincronizado (${totalMatematica} Habilidades)`;
-            badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-            alertPersonalizado(`Sucesso! Matriz Curricular enviada com sucesso ao Firebase (${totalMatematica} habilidades de Matemática cadastradas).`);
+            btnText.textContent = `Enviando (247 Habilidades)...`;
+            badgeTxt.textContent = `Sincronizando no Firebase...`;
+            badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+
+            const updates = {};
+            updates['/matrizCurricularBNCC'] = baseMatrizCurricular;
+
+            return db.ref().update(updates).then(() => {
+              btnText.textContent = "Subir Matriz Curricular";
+              badgeTxt.textContent = `Firebase Sincronizado (${totalMatematica} Habilidades)`;
+              badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+              alertPersonalizado(`Sucesso! Matriz Curricular enviada com sucesso ao Firebase (${totalMatematica} habilidades de Matemática cadastradas).`);
+            });
           })
           .catch((error) => {
             btnText.textContent = "Subir Matriz Curricular";
             badgeTxt.textContent = "Erro na Sincronização";
             badgeDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
-            alertPersonalizado("Erro ao enviar matriz para o Firebase: " + error.message);
+            alertPersonalizado("Erro ao verificar/enviar matriz no Firebase: " + error.message);
           });
       }
 
       function salvarPlano(e) {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
 
         const cabecalhoUrl = document.getElementById('cabecalhoUrl').value.trim();
         const disciplina = document.getElementById('selectDisciplina').value;
@@ -838,15 +874,20 @@
         const avaliacao = document.getElementById('inputAvaliacao').value.trim();
         const observacoes = document.getElementById('inputObservacoes').value.trim();
 
-        if (habilidadesAdicionadas.length === 0) {
-          alertPersonalizado("Adicione pelo menos uma habilidade ao plano antes de salvar.");
-          return;
+        if (!tituloAula) {
+          alertPersonalizado("Informe o título da aula / sequência didática.");
+          return false;
         }
 
-        const datasValidas = datasBlocoAulas.filter(d => d.trim() !== '');
+        if (habilidadesAdicionadas.length === 0) {
+          alertPersonalizado("Adicione pelo menos uma habilidade ao plano antes de salvar.");
+          return false;
+        }
+
+        const datasValidas = datasBlocoAulas.filter(d => d && d.trim() !== '');
         if (datasValidas.length === 0) {
           alertPersonalizado("Preencha pelo menos uma data no cronograma do bloco de aulas.");
-          return;
+          return false;
         }
 
         const idPlano = 'plano_' + Date.now();
@@ -867,12 +908,14 @@
 
         db.ref('planosDeAula/' + idPlano).set(plano)
           .then(() => {
-            alertPersonalizado("Plano de Aula salvo com sucesso!");
+            alertPersonalizado("Plano de Aula salvo com sucesso no Firebase!");
             limparFormulario();
           })
           .catch((err) => {
             alertPersonalizado("Erro ao salvar no Firebase: " + err.message);
           });
+
+        return false;
       }
 
       function carregarPlanosDoFirebase() {
