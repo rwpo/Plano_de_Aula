@@ -462,89 +462,126 @@
     const configRef = db.ref('configuracoes/cabecalhoUrl');
 
     // -------------------------------------------------------------
-    // BANCO DE DADOS CURRICULAR (BNCC MATEMÁTICA & LIBRAS)
+    // BANCO DE DADOS CURRICULAR COMPLETO (BNCC MATEMÁTICA & LIBRAS)
     // -------------------------------------------------------------
     const matrizCurricular = {
       Matematica: {
         "1º Ano": [
           { codigo: "EF01MA01", desc: "Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas." },
-          { codigo: "EF01MA02", desc: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como pareamento e agrupar." },
+          { codigo: "EF01MA02", desc: "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como pareamento e agrupamento." },
           { codigo: "EF01MA03", desc: "Estimar e comparar quantidades de objetos de dois conjuntos (ao menos 20 elementos)." },
           { codigo: "EF01MA04", desc: "Contar a quantidade de objetos de coleções até 100 unidades e apresentar o resultado por registros verbais e simbólicos." },
-          { codigo: "EF01MA06", desc: "Construir fatos básicos da adição e utilizá-los em procedimentos de cálculo mental ou escrito." }
+          { codigo: "EF01MA05", desc: "Comparar números naturais de até duas ordens em situações cotidianas, com e sem suporte da reta numérica." },
+          { codigo: "EF01MA06", desc: "Construir fatos básicos da adição e utilizá-los em procedimentos de cálculo mental ou escrito." },
+          { codigo: "EF01MA11", desc: "Descrever a localização de pessoas e de objetos no espaço em relação à sua própria posição." },
+          { codigo: "EF01MA15", desc: "Comparar comprimentos, capacidades ou massas, utilizando termos como mais alto, mais baixo, mais comprido, mais curto, mais pesado e mais leve." }
         ],
         "2º Ano": [
           { codigo: "EF02MA01", desc: "Comparar e ordenar números naturais (até a ordem de centenas) pela compreensão do sistema de numeração decimal." },
+          { codigo: "EF02MA04", desc: "Compor e decompor números naturais de até três ordens, com suporte de material manipulável." },
           { codigo: "EF02MA05", desc: "Construir fatos básicos da adição e subtração e utilizá-los no cálculo mental ou escrito." },
-          { codigo: "EF02MA06", desc: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até três ordens." }
+          { codigo: "EF02MA06", desc: "Resolver e elaborar problemas de adição e de subtração, envolvendo números de até três ordens." },
+          { codigo: "EF02MA07", desc: "Resolver e elaborar problemas de multiplicação (por 2, 3, 4 e 5) com a ideia de adição de parcelas iguais." },
+          { codigo: "EF02MA14", desc: "Reconhecer, nomear e comparar figuras geométricas espaciais (cubo, bloco retangular, pirâmide, cone, cilindro e esfera)." },
+          { codigo: "EF02MA18", desc: "Indicar a duração de intervalos de tempo entre dois eventos, utilizando relógio analógico ou digital." }
         ],
         "3º Ano": [
           { codigo: "EF03MA01", desc: "Ler, escrever e comparar números naturais de até a ordem de unidades de milhar." },
+          { codigo: "EF03MA02", desc: "Identificar características do sistema de numeração decimal, utilizando a composição e a decomposição de número natural de até quatro ordens." },
           { codigo: "EF03MA06", desc: "Resolver e elaborar problemas de adição e subtração com os significados de juntar, acrescentar, separar, retirar, comparar e completar quantidades." },
-          { codigo: "EF03MA07", desc: "Construir e utilizar fatos básicos da multiplicação e divisão para o cálculo mental ou escrito." }
+          { codigo: "EF03MA07", desc: "Construir e utilizar fatos básicos da multiplicação e divisão para o cálculo mental ou escrito." },
+          { codigo: "EF03MA08", desc: "Resolver e elaborar problemas de multiplicação com os significados de adição de parcelas iguais e elementos apresentados em disposição retangular." },
+          { codigo: "EF03MA15", desc: "Classificar e comparar figuras planas (triângulos, quadriláteros etc.) por seus lados e vértices." }
         ],
         "4º Ano": [
           { codigo: "EF04MA01", desc: "Ler, escrever e ordenar números naturais até a ordem de dezenas de milhar." },
+          { codigo: "EF04MA02", desc: "Mostrar, por decomposição e composição, que todo número natural pode ser escrito por meio de adições e multiplicações por potências de dez." },
           { codigo: "EF04MA04", desc: "Utilizar as relações entre adição e subtração, bem como entre multiplicação e divisão, para ampliar as estratégias de cálculo." },
-          { codigo: "EF04MA09", desc: "Reconhecer as frações unitárias mais frequentes (1/2, 1/3, 1/4, 1/5, 1/10 e 1/100) como unidades de medida de menores que a unidade." }
+          { codigo: "EF04MA06", desc: "Resolver e elaborar problemas de multiplicação envolvendo números naturais cuja representação decimal seja finita." },
+          { codigo: "EF04MA09", desc: "Reconhecer as frações unitárias mais frequentes (1/2, 1/3, 1/4, 1/5, 1/10 e 1/100) como unidades de medida de menores que a unidade." },
+          { codigo: "EF04MA20", desc: "Medir e estimar comprimentos, massas e capacidades utilizando unidades de medida padronizadas mais usuais." }
         ],
         "5º Ano": [
           { codigo: "EF05MA01", desc: "Ler, escrever e ordenar números naturais até a ordem das centenas de milhar com compreensão das regras do sistema de numeração decimal." },
+          { codigo: "EF05MA02", desc: "Ler, escrever e ordenar números racionais na forma decimal com compreensão das regras do sistema de numeração decimal." },
           { codigo: "EF05MA07", desc: "Resolver e elaborar problemas de adição e subtração com números naturais e com números racionais, cuja representação decimal seja finita." },
-          { codigo: "EF05MA08", desc: "Resolver e elaborar problemas de multiplicação e divisão com números naturais e com números racionais cuja representação decimal seja finita." }
+          { codigo: "EF05MA08", desc: "Resolver e elaborar problemas de multiplicação e divisão com números naturais e com números racionais cuja representação decimal seja finita." },
+          { codigo: "EF05MA16", desc: "Associar figuras espaciais às suas planificações (prismas, pirâmides, cilindros e cones) e analisar suas características." },
+          { codigo: "EF05MA19", desc: "Resolver e elaborar problemas envolvendo medidas das grandezas comprimento, área, massa, tempo, temperatura e capacidade." }
         ],
         "6º Ano": [
           { codigo: "EF06MA01", desc: "Comparar, ordenar, ler e escrever números naturais e números racionais positivos, cuja representação decimal é finita." },
           { codigo: "EF06MA03", desc: "Resolver e elaborar problemas que envolvam cálculos (adição, subtração, multiplicação, divisão e potenciação) com números naturais." },
-          { codigo: "EF06MA07", desc: "Compreender, comparar e ordenar frações associadas às ideias de partes de inteiros e resultado de divisão." }
+          { codigo: "EF06MA07", desc: "Compreender, comparar e ordenar frações associadas às ideias de partes de inteiros e resultado de divisão." },
+          { codigo: "EF06MA09", desc: "Resolver e elaborar problemas que envolvam o cálculo da fração de uma quantidade e cujo resultado seja um número natural." },
+          { codigo: "EF06MA17", desc: "Quantificar e estabelecer relações entre o número de vértices, faces earestas de prismas e pirâmides." },
+          { codigo: "EF06MA24", desc: "Determinar a probabilidade de ocorrência de um resultado em eventos aleatórios simples." }
         ],
         "7º Ano": [
           { codigo: "EF07MA01", desc: "Resolver e elaborar problemas com números naturais, envolvendo as noções de divisor e de múltiplo, incluindo MDC e MMC." },
           { codigo: "EF07MA02", desc: "Resolver e elaborar problemas que envolvam porcentagens, incluindo a ideia de aplicação de percentuais sucessivos." },
-          { codigo: "EF07MA04", desc: "Resolver e elaborar problemas que envolvam operações com números inteiros." }
+          { codigo: "EF07MA04", desc: "Resolver e elaborar problemas que envolvam operações com números inteiros." },
+          { codigo: "EF07MA18", desc: "Resolver e elaborar problemas que envolvam a variação de proporcionalidade direta e inversa entre duas grandezas." },
+          { codigo: "EF07MA27", desc: "Calcular a medida de ângulos internos de polígonos regulares sem o uso de fórmulas, apenas por decomposição em triângulos." }
         ],
         "8º Ano": [
           { codigo: "EF08MA01", desc: "Efetuar cálculos com potências de expoentes inteiros e aplicar esse conhecimento na representação de números em notação científica." },
           { codigo: "EF08MA04", desc: "Resolver e elaborar problemas que envolvam cálculo de porcentagens, incluindo juros simples." },
-          { codigo: "EF08MA06", desc: "Resolver e elaborar problemas que envolvam cálculo do valor numérico de expressões algébricas." }
+          { codigo: "EF08MA06", desc: "Resolver e elaborar problemas que envolvam cálculo do valor numérico de expressões algébricas." },
+          { codigo: "EF08MA12", desc: "Identificar a natureza da variação de duas grandezas, diretamente, inversamente proporcionais ou não proporcionais." },
+          { codigo: "EF08MA19", desc: "Resolver e elaborar problemas que envolvam medidas de área de figuras geométricas planas." }
         ],
         "9º Ano": [
           { codigo: "EF09MA01", desc: "Reconhecer que a resolução de uma equação do 2º grau por meio da fórmula de Bhaskara é aplicável em diversos contextos." },
           { codigo: "EF09MA03", desc: "Efetuar cálculos com números reais, envolvendo radicais e potências com expoentes fracionários." },
-          { codigo: "EF09MA06", desc: "Compreender as funções como relações de dependência unívoca entre duas variáveis e suas representações numérica, algébrica e gráfica." }
+          { codigo: "EF09MA06", desc: "Compreender as funções como relações de dependência unívoca entre duas variáveis e suas representações numérica, algébrica e gráfica." },
+          { codigo: "EF09MA13", desc: "Demonstrar relações métricas do triângulo retângulo, entre elas o teorema de Pitágoras." },
+          { codigo: "EF09MA18", desc: "Reconhecer e empregar unidades de medida para expressar grandezas muito grandes ou muito pequenas (como distância entre planetas ou tamanho de vírus)." }
         ]
       },
       Libras: {
         "Educação Infantil": [
           { codigo: "EI01LS01", desc: "Explorar a percepção e atenção visual por meio da comunicação em Libras e apontamentos no ambiente." },
-          { codigo: "EI01LS02", desc: "Expressar necessidades, emoções e desejos utilizando a Língua de Sinais e expressões faciais decorrentes." }
+          { codigo: "EI01LS02", desc: "Expressar necessidades, emoções e desejos utilizando a Língua de Sinais e expressões faciais decorrentes." },
+          { codigo: "EI02LS03", desc: "Imitar e reproduzir sinalizações visuais, classificadores icônicos e brincadeiras cantadas/sinalizadas." },
+          { codigo: "EI03LS04", desc: "Reconhecer os sinais referentes aos elementos do cotidiano escolar, familiar e aos nomes próprios em sinais." }
         ],
         "1º Ano": [
           { codigo: "EF01LS01", desc: "Consolidar aspectos pragmáticos e visuais do contato comunicativo na Língua Brasileira de Sinais (Libras)." },
+          { codigo: "EF01LS02", desc: "Reconhecer a dactilologia (alfabeto manual) e seu uso para nomes próprios e palavras sem sinal específico." },
           { codigo: "EF01LS21", desc: "Identificar-se como sujeito surdo e reconhecer a importância da identidade e da comunidade surda." }
         ],
         "2º Ano": [
-          { codigo: "EF02LS01", desc: "Compreender o uso dos parâmetros formativos da Libras (Configuração de Mão, Ponto de Articulação e Movimento)." }
+          { codigo: "EF02LS01", desc: "Compreender o uso dos parâmetros formativos da Libras (Configuração de Mão, Ponto de Articulação e Movimento)." },
+          { codigo: "EF02LS02", desc: "Reconhecer a Orientação da Palma e as Expressões Não Manuais como constituintes fonológicos de Libras." },
+          { codigo: "EF02LS03", desc: "Utilizar sinais referentes a números, quantificadores e calendário espacial em produções sinalizadas." }
         ],
         "3º Ano": [
-          { codigo: "EF03LS01", desc: "Utilizar classificadores simples para descrever formas, tamanhos e posições no espaço sinalizado." }
+          { codigo: "EF03LS01", desc: "Utilizar classificadores simples para descrever formas, tamanhos e posições no espaço sinalizado." },
+          { codigo: "EF03LS02", desc: "Desenvolver narrativas visuais sinalizadas utilizando marcadores temporais (passado, presente e futuro)." }
         ],
         "4º Ano": [
-          { codigo: "EF04LS01", desc: "Empregar os marcadores não manuais (expressões faciais e corporais) para flexão gramatical e entonação em Libras." }
+          { codigo: "EF04LS01", desc: "Empregar os marcadores não manuais (expressões faciais e corporais) para flexão gramatical e entonação em Libras." },
+          { codigo: "EF04LS02", desc: "Estabelecer referentes no espaço de sinalização para a organização do discurso e concordância pronominal." }
         ],
         "5º Ano": [
-          { codigo: "EF05LS01", desc: "Produzir narrativas sinalizadas estruturadas com coesão, coerência e uso adequado do espaço de sinalização." }
+          { codigo: "EF05LS01", desc: "Produzir narrativas sinalizadas estruturadas com coesão, coerência e uso adequado do espaço de sinalização." },
+          { codigo: "EF05LS02", desc: "Identificar verbos direcionais e não direcionais na estruturação de frases complexas em Libras." }
         ],
         "6º Ano": [
-          { codigo: "EF06LS01", desc: "Analisar as variações linguísticas em Libras referentes a aspectos regionais, sociais e geracionais." }
+          { codigo: "EF06LS01", desc: "Analisar as variações linguísticas em Libras referentes a aspectos regionais, sociais e geracionais." },
+          { codigo: "EF06LS02", desc: "Comparar registros formais e informais da Libras em diferentes esferas comunicativas e mídias visuais." }
         ],
         "7º Ano": [
-          { codigo: "EF07LS01", desc: "Utilizar classificadores complexos na descrição de ações, movimentos e caracterização de objetos/cenários." }
+          { codigo: "EF07LS01", desc: "Utilizar classificadores complexos na descrição de ações, movimentos e caracterização de objetos/cenários." },
+          { codigo: "EF07LS02", desc: "Compreender a incorporação de negação, número e argumento na estrutura dos verbos em Libras." }
         ],
         "8º Ano": [
-          { codigo: "EF08LS01", desc: "Compreender a literatura surda (poesias, piadas, piadas visuais e metáforas em Libras) e suas especificidades culturais." }
+          { codigo: "EF08LS01", desc: "Compreender a literatura surda (poesias, piadas, piadas visuais e metáforas em Libras) e suas especificidades culturais." },
+          { codigo: "EF08LS02", desc: "Analisar as produções de sinalizadores nativos e surdos acadêmicos observando o uso estético da língua." }
         ],
         "9º Ano": [
+          { codigo: "EF09LS01", desc: "Produzir discursos argumentativos e expositivos sinalizados com vocabulário técnico-acadêmico em Libras." },
           { codigo: "EF09LS40", desc: "Debater tópicos de relevância social, acadêmica e científica utilizando o registro formal da Libras e argumentação sinalizada." }
         ]
       },
@@ -682,13 +719,13 @@
 
       if (!codigo || !desc) {
         mostrarToast("Informe ou selecione um código e a descrição da habilidade.", "erro");
-        return;
+        return false;
       }
 
       // Evita duplicatas exatas
       if (habilidadesSelecionadas.some(h => h.codigo === codigo && h.desc === desc)) {
         mostrarToast("Esta habilidade já foi adicionada ao plano.", "erro");
-        return;
+        return false;
       }
 
       habilidadesSelecionadas.push({ codigo, desc });
@@ -697,6 +734,7 @@
       // Limpa campos auxiliares
       codigoInput.value = "";
       descInput.value = "";
+      return true;
     }
 
     function removerHabilidadeDoPlano(index) {
@@ -844,6 +882,13 @@
     // -------------------------------------------------------------
     function salvarPlano(event) {
       event.preventDefault();
+
+      // Auto-adiciona a habilidade preenchida nos inputs caso o usuário não tenha clicado no botão "Adicionar"
+      const codInp = document.getElementById('codigoHabilidade').value.trim();
+      const descInp = document.getElementById('descricaoHabilidade').value.trim();
+      if (habilidadesSelecionadas.length === 0 && codInp && descInp) {
+        adicionarHabilidadeAoPlano();
+      }
 
       if (habilidadesSelecionadas.length === 0) {
         mostrarToast("Adicione pelo menos uma habilidade/objetivo ao plano.", "erro");
