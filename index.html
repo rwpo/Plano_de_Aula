@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Planos de Aula BNCC v1.0</title>
+    <title>Gerenciador de Planos de Aula BNCC v2.0</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Inter & FontAwesome -->
@@ -107,8 +107,8 @@
                     <i class="fa-solid fa-graduation-cap text-2xl text-amber-300" aria-hidden="true"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-extrabold tracking-tight">Gerenciador de Planos de Aula BNCC <span class="bg-indigo-900 text-amber-300 border border-amber-300/40 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ml-1">v1.0</span></h1>
-                    <p class="text-xs text-indigo-100 font-medium">Matemática (1º ao 9º Ano), Libras & Português L2 • Sincronizado no Firebase</p>
+                    <h1 class="text-xl font-extrabold tracking-tight">Gerenciador de Planos de Aula BNCC <span class="bg-indigo-900 text-amber-300 border border-amber-300/40 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ml-1">v2.0</span></h1>
+                    <p class="text-xs text-indigo-100 font-medium">Matemática, Libras & Português L2 • 100% Funcional & Sincronizado</p>
                 </div>
             </div>
             
@@ -130,17 +130,30 @@
                 </button>
             </div>
         </div>
+
+        <!-- Abas de Navegação Principal -->
+        <div class="max-w-7xl mx-auto px-4 flex space-x-2 border-t border-indigo-600/50 pt-2 pb-1 no-print">
+            <button id="tabBtnCriar" onclick="alternarAbaPrincipal('criar')" class="px-5 py-2 rounded-t-xl text-xs font-extrabold transition flex items-center space-x-2 bg-white text-indigo-900 shadow">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Criar Plano de Aula</span>
+            </button>
+            <button id="tabBtnGerenciar" onclick="alternarAbaPrincipal('gerenciar')" class="px-5 py-2 rounded-t-xl text-xs font-extrabold transition flex items-center space-x-2 text-indigo-100 hover:bg-indigo-800">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>Planos Cadastrados</span>
+                <span id="badgeContadorPlanosTab" class="bg-amber-400 text-indigo-950 font-black text-[10px] px-2 py-0.5 rounded-full ml-1">0</span>
+            </button>
+        </div>
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
-        <!-- Form Section (Left / Main) -->
-        <section class="lg:col-span-8 bg-white rounded-2xl shadow-md border border-slate-300 p-6 no-print">
+        <!-- ABA 1: Criar Plano de Aula -->
+        <section id="abaCriarPlano" class="bg-white rounded-2xl shadow-md border border-slate-300 p-6 no-print">
             <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-900 flex items-center space-x-2">
                     <i class="fa-solid fa-pen-to-square text-indigo-700 text-xl"></i>
-                    <span>Criar Plano de Aula</span>
+                    <span>Novo Plano de Aula</span>
                 </h2>
                 <button onclick="limparFormulario()" class="text-xs font-bold text-slate-700 hover:text-rose-700 transition flex items-center space-x-1.5 bg-slate-100 hover:bg-rose-50 px-3 py-1.5 rounded-lg border border-slate-300">
                     <i class="fa-solid fa-rotate-right"></i>
@@ -333,24 +346,105 @@
             </form>
         </section>
 
-        <!-- Sidebar / Listagem de Planos Salvos (Right) -->
-        <aside class="lg:col-span-4 space-y-6 no-print">
-            <div class="bg-white rounded-2xl shadow-md border border-slate-300 p-5 sticky top-24">
+        <!-- ABA 2: Planos Cadastrados (Gerenciamento + Visualização Inline) -->
+        <section id="abaGerenciarPlanos" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 no-print">
+            <!-- Coluna da Esquerda: Filtros e Lista de Planos -->
+            <div class="lg:col-span-5 bg-white rounded-2xl shadow-md border border-slate-300 p-5 flex flex-col h-[calc(100vh-160px)]">
                 <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
                     <h3 class="font-extrabold text-slate-900 text-sm flex items-center space-x-2">
-                        <i class="fa-solid fa-book-bookmark text-indigo-700 text-base"></i>
-                        <span>Planos Cadastrados</span>
+                        <i class="fa-solid fa-filter text-indigo-700"></i>
+                        <span>Gerenciador de Planos</span>
                     </h3>
-                    <span id="contadorPlanos" class="bg-indigo-900 text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold">0</span>
+                    <span id="contadorPlanosGerenciador" class="bg-indigo-900 text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold">0</span>
                 </div>
 
-                <div id="containerListaPlanos" class="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
-                    <div class="text-center py-8 text-slate-600 text-xs italic font-semibold">
-                        Nenhum plano salvo ainda. Crie seu primeiro plano ao lado!
+                <!-- Painel de Filtros -->
+                <div class="space-y-3 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-magnifying-glass text-indigo-600"></i>
+                            <span>Filtrar por Título / Conteúdo</span>
+                        </label>
+                        <input type="text" id="filtroTextoPlano" oninput="filtrarEBuscarPlanos()" placeholder="Digite para buscar no título..." class="w-full text-xs font-semibold border border-slate-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1 flex items-center space-x-1">
+                                <i class="fa-regular fa-calendar-days text-indigo-600"></i>
+                                <span>Filtrar por Mês</span>
+                            </label>
+                            <select id="filtroMesPlano" onchange="filtrarEBuscarPlanos()" class="w-full text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-2 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                                <option value="">Todos os Meses</option>
+                                <option value="01">Janeiro</option>
+                                <option value="02">Fevereiro</option>
+                                <option value="03">Março</option>
+                                <option value="04">Abril</option>
+                                <option value="05">Maio</option>
+                                <option value="06">Junho</option>
+                                <option value="07">Julho</option>
+                                <option value="08">Agosto</option>
+                                <option value="09">Setembro</option>
+                                <option value="10">Outubro</option>
+                                <option value="11">Novembro</option>
+                                <option value="12">Dezembro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1 flex items-center space-x-1">
+                                <i class="fa-solid fa-book text-indigo-600"></i>
+                                <span>Disciplina</span>
+                            </label>
+                            <select id="filtroDisciplinaPlano" onchange="filtrarEBuscarPlanos()" class="w-full text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-2 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                                <option value="">Todas</option>
+                                <option value="Matematica">Matemática</option>
+                                <option value="Libras">Libras</option>
+                                <option value="PortuguesL2">Português L2</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista Filtrada -->
+                <div id="containerListaPlanosAba" class="space-y-2.5 overflow-y-auto flex-1 pr-1">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <!-- Coluna da Direita: Visualização Inline do Plano Selecionado -->
+            <div class="lg:col-span-7 bg-white rounded-2xl shadow-md border border-slate-300 p-6 flex flex-col h-[calc(100vh-160px)] overflow-y-auto">
+                <div id="painelSemSelecao" class="my-auto text-center py-12 space-y-3">
+                    <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-2xl border border-indigo-100">
+                        <i class="fa-solid fa-file-signature"></i>
+                    </div>
+                    <h4 class="font-extrabold text-slate-800 text-sm">Nenhum plano selecionado</h4>
+                    <p class="text-xs text-slate-500 max-w-xs mx-auto">Clique em um dos planos cadastrados na lista à esquerda para visualizar seus detalhes, imprimir ou gerar o PDF.</p>
+                </div>
+
+                <div id="painelVisualizacaoInline" class="hidden space-y-5">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+                        <span class="text-xs font-extrabold text-indigo-700 uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-solid fa-eye"></i>
+                            <span>Visualização do Plano</span>
+                        </span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="imprimirPlanoSelecionadoInline()" class="bg-indigo-800 hover:bg-indigo-900 text-white text-xs px-3.5 py-2 rounded-lg font-bold transition flex items-center space-x-1.5 shadow">
+                                <i class="fa-solid fa-print"></i>
+                                <span>Imprimir / PDF</span>
+                            </button>
+                            <button id="btnExcluirPlanoInline" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs px-3 py-2 rounded-lg font-bold transition flex items-center space-x-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Excluir</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="conteudoPlanoInline" class="space-y-5 text-slate-900">
+                        <!-- Conteúdo injetado via JS -->
                     </div>
                 </div>
             </div>
-        </aside>
+        </section>
 
     </main>
 
@@ -461,6 +555,28 @@
       let habilidadesAdicionadas = [];
       let planosSalvos = {};
       let datasBlocoAulas = [];
+      let planoSelecionadoId = null;
+
+      // Navegação por Abas Principais
+      function alternarAbaPrincipal(aba) {
+        const btnCriar = document.getElementById('tabBtnCriar');
+        const btnGerenciar = document.getElementById('tabBtnGerenciar');
+        const secCriar = document.getElementById('abaCriarPlano');
+        const secGerenciar = document.getElementById('abaGerenciarPlanos');
+
+        if (aba === 'criar') {
+          secCriar.classList.remove('hidden');
+          secGerenciar.classList.add('hidden');
+          btnCriar.className = "px-5 py-2 rounded-t-xl text-xs font-extrabold transition flex items-center space-x-2 bg-white text-indigo-900 shadow";
+          btnGerenciar.className = "px-5 py-2 rounded-t-xl text-xs font-extrabold transition flex items-center space-x-2 text-indigo-100 hover:bg-indigo-800";
+        } else {
+          secCriar.classList.add('hidden');
+          secGerenciar.classList.remove('hidden');
+          btnGerenciar.className = "px-5 py-2 rounded-t-xl text-xs font-extrabold transition flex items-center space-x-2 bg-white text-indigo-900 shadow";
+          btnCriar.className = "px-5 py-2 rounded-t-xl text-xs font-extrabold transition flex items-center space-x-2 text-indigo-100 hover:bg-indigo-800";
+          filtrarEBuscarPlanos();
+        }
+      }
 
       // Mapeamento de Eixos para Matemática e Libras
       function obterEixoMatematica(codigo) {
@@ -1808,53 +1924,237 @@
       }
 
       function renderizarListaPlanos() {
-        const container = document.getElementById('containerListaPlanos');
-        const contador = document.getElementById('contadorPlanos');
+        filtrarEBuscarPlanos();
+      }
+
+      function filtrarEBuscarPlanos() {
+        const textoFiltro = (document.getElementById('filtroTextoPlano')?.value || '').trim().toLowerCase();
+        const mesFiltro = document.getElementById('filtroMesPlano')?.value || '';
+        const discFiltro = document.getElementById('filtroDisciplinaPlano')?.value || '';
+
+        const containerAba = document.getElementById('containerListaPlanosAba');
+        const badgeTab = document.getElementById('badgeContadorPlanosTab');
+        const contadorGerenciador = document.getElementById('contadorPlanosGerenciador');
+
         const chaves = Object.keys(planosSalvos);
+        if (badgeTab) badgeTab.textContent = chaves.length;
 
-        if (contador) contador.textContent = chaves.length;
+        if (!containerAba) return;
 
-        if (chaves.length === 0) {
-          container.innerHTML = `
-            <div class="text-center py-8 text-slate-400 text-xs italic">
-              Nenhum plano salvo ainda. Crie seu primeiro plano ao lado!
+        let planosFiltrados = chaves.map(k => planosSalvos[k]).filter(p => {
+          if (!p) return false;
+
+          // Filtro por Texto (Título da Aula)
+          if (textoFiltro) {
+            const titulo = (p.tituloAula || '').toLowerCase();
+            if (!titulo.includes(textoFiltro)) return false;
+          }
+
+          // Filtro por Disciplina
+          if (discFiltro && p.disciplina !== discFiltro) return false;
+
+          // Filtro por Mês (Análise das datas do bloco ou data de criação)
+          if (mesFiltro) {
+            let possuiMes = false;
+            if (p.datasBloco && Array.isArray(p.datasBloco)) {
+              possuiMes = p.datasBloco.some(d => d && d.split('-')[1] === mesFiltro);
+            }
+            if (!possuiMes && p.criadoEm) {
+              const mesCriado = p.criadoEm.split('-')[1];
+              if (mesCriado === mesFiltro) possuiMes = true;
+            }
+            if (!possuiMes) return false;
+          }
+
+          return true;
+        });
+
+        if (contadorGerenciador) contadorGerenciador.textContent = planosFiltrados.length;
+
+        if (planosFiltrados.length === 0) {
+          containerAba.innerHTML = `
+            <div class="text-center py-10 text-slate-400 text-xs italic font-medium">
+              Nenhum plano encontrado com os filtros selecionados.
             </div>`;
           return;
         }
 
-        container.innerHTML = '';
-        chaves.sort((a, b) => (planosSalvos[b].criadoEm || '').localeCompare(planosSalvos[a].criadoEm || ''))
-              .forEach(key => {
-                const p = planosSalvos[key];
-                const datasStr = (p.datasBloco || []).map(d => {
-                  if (!d) return '';
-                  const partes = d.split('-');
-                  return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : d;
-                }).filter(Boolean).join(', ');
+        containerAba.innerHTML = '';
+        planosFiltrados.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''))
+          .forEach(p => {
+            const datasStr = (p.datasBloco || []).map(d => {
+              if (!d) return '';
+              const partes = d.split('-');
+              return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : d;
+            }).filter(Boolean).join(', ');
 
-                const div = document.createElement('div');
-                div.className = "bg-slate-50 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-200 p-3.5 rounded-xl transition text-xs space-y-2 group";
-                div.innerHTML = `
-                  <div class="flex justify-between items-start gap-2">
-                    <span class="font-bold text-slate-800 group-hover:text-indigo-700 line-clamp-1">${p.tituloAula || 'Sem título'}</span>
-                    <span class="bg-indigo-100 text-indigo-700 font-semibold px-2 py-0.5 rounded text-[10px] shrink-0">${p.disciplina}</span>
-                  </div>
-                  <div class="text-[11px] text-slate-500">
-                    <p><i class="fa-regular fa-calendar text-indigo-500 mr-1"></i> ${datasStr || 'Sem data'}</p>
-                    <p class="mt-0.5"><i class="fa-solid fa-layer-group text-indigo-500 mr-1"></i> ${p.etapa}</p>
-                  </div>
-                  <div class="flex justify-between items-center pt-2 border-t border-slate-200/60">
-                    <button onclick="visualizarPlano('${p.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition flex items-center space-x-1 shadow-sm">
-                      <i class="fa-solid fa-eye"></i>
-                      <span>Visualizar / PDF</span>
-                    </button>
-                    <button onclick="excluirPlano('${p.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Excluir Plano">
-                      <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                  </div>
-                `;
-                container.appendChild(div);
-              });
+            const isSelected = planoSelecionadoId === p.id;
+            const div = document.createElement('div');
+            div.className = `p-3.5 rounded-xl border transition text-xs space-y-2 cursor-pointer ${
+              isSelected 
+                ? 'bg-indigo-50 border-indigo-500 shadow-md ring-2 ring-indigo-500/20' 
+                : 'bg-white hover:bg-slate-50 border-slate-200'
+            }`;
+
+            div.onclick = () => selecionarPlanoParaExibicaoInline(p.id);
+
+            div.innerHTML = `
+              <div class="flex justify-between items-start gap-2">
+                <span class="font-extrabold text-slate-900 line-clamp-1">${p.tituloAula || 'Sem título'}</span>
+                <span class="bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded text-[10px] shrink-0">${p.disciplina}</span>
+              </div>
+              <div class="text-[11px] text-slate-600 font-medium">
+                <p><i class="fa-regular fa-calendar text-indigo-600 mr-1"></i> ${datasStr || 'Sem data'}</p>
+                <p class="mt-0.5"><i class="fa-solid fa-layer-group text-indigo-600 mr-1"></i> ${p.etapa}</p>
+              </div>
+            `;
+            containerAba.appendChild(div);
+          });
+      }
+
+      function selecionarPlanoParaExibicaoInline(id) {
+        planoSelecionadoId = id;
+        filtrarEBuscarPlanos(); // Atualiza destaque na lista
+
+        const p = planosSalvos[id];
+        const painelSemSelecao = document.getElementById('painelSemSelecao');
+        const painelVisualizacao = document.getElementById('painelVisualizacaoInline');
+        const containerConteudo = document.getElementById('conteudoPlanoInline');
+        const btnExcluir = document.getElementById('btnExcluirPlanoInline');
+
+        if (!p) {
+          painelSemSelecao.classList.remove('hidden');
+          painelVisualizacao.classList.add('hidden');
+          return;
+        }
+
+        painelSemSelecao.classList.add('hidden');
+        painelVisualizacao.classList.remove('hidden');
+
+        if (btnExcluir) {
+          btnExcluir.onclick = () => excluirPlano(id);
+        }
+
+        const datasStr = (p.datasBloco || []).map(d => {
+          if (!d) return '';
+          const partes = d.split('-');
+          return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : d;
+        }).filter(Boolean).join(' • ');
+
+        let habilidadesSectionHtml = '';
+        if (p.disciplina !== 'PortuguesL2' && p.habilidades && p.habilidades.length > 0) {
+          let habilidadesHtml = (p.habilidades || []).map(h => `
+            <div class="mb-2">
+              <span class="inline-block bg-indigo-100 text-indigo-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full mr-1.5 uppercase border border-indigo-300">Eixo: ${h.eixo || 'Geral'}</span>
+              <strong class="text-indigo-900 font-extrabold">${h.codigo}:</strong> <span class="text-slate-800 font-medium">${h.descricao}</span>
+            </div>
+          `).join('');
+
+          habilidadesSectionHtml = `
+            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+              <h4 class="font-extrabold text-indigo-950 uppercase text-[11px] tracking-wider mb-2 flex items-center space-x-1.5">
+                <i class="fa-solid fa-bullseye text-indigo-700"></i>
+                <span>Habilidades & Eixos Temáticos</span>
+              </h4>
+              ${habilidadesHtml}
+            </div>
+          `;
+        }
+
+        let cabecalhoUrl = p.cabecalhoUrl || localStorage.getItem('cabecalhoUrlSalva') || '';
+        let cabecalhoImgHtml = cabecalhoUrl ? `
+          <div class="text-center mb-4 pb-2 pt-0 mt-0">
+            <img src="${window.normalizarUrlImagem(cabecalhoUrl)}" alt="Cabeçalho Institucional" class="max-h-24 mx-auto object-contain block" onerror="this.style.display='none'">
+          </div>
+        ` : '';
+
+        containerConteudo.innerHTML = `
+          ${cabecalhoImgHtml}
+          <div class="border-b border-slate-300 pb-3 mb-4">
+            <h2 class="text-xl font-extrabold text-slate-900 uppercase tracking-tight">${p.tituloAula}</h2>
+            <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-bold text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <div><i class="fa-solid fa-user-tie text-indigo-700 mr-1.5"></i><strong>Prof. Responsável:</strong> ${p.professorResponsavel || 'Não informado'}</div>
+              ${p.bolsistasEstagiarios ? `<div><i class="fa-solid fa-user-graduate text-indigo-700 mr-1.5"></i><strong>Bolsistas/Estagiários:</strong> ${p.bolsistasEstagiarios}</div>` : ''}
+              <div><i class="fa-solid fa-book text-indigo-700 mr-1.5"></i><strong>Componente:</strong> ${p.disciplina}</div>
+              <div><i class="fa-solid fa-layer-group text-indigo-700 mr-1.5"></i><strong>Etapa/Ano:</strong> ${p.etapa}</div>
+              <div class="md:col-span-2"><i class="fa-regular fa-calendar-days text-indigo-700 mr-1.5"></i><strong>Cronograma de Aulas:</strong> ${datasStr}</div>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs">
+            ${habilidadesSectionHtml}
+
+            ${p.objetivoPrincipal ? `
+              <div>
+                <h4 class="font-extrabold text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-bullseye text-indigo-700"></i>
+                  <span>Objetivo Principal de Aprendizagem</span>
+                </h4>
+                <p class="text-slate-900 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-300 font-semibold">${p.objetivoPrincipal}</p>
+              </div>
+            ` : ''}
+
+            ${p.objetivosSecundarios ? `
+              <div>
+                <h4 class="font-extrabold text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-circle-nodes text-indigo-700"></i>
+                  <span>Objetivos Secundários de Aprendizagem</span>
+                </h4>
+                <p class="text-slate-800 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-300 font-medium">${p.objetivosSecundarios}</p>
+              </div>
+            ` : ''}
+
+            ${p.materiais ? `
+              <div>
+                <h4 class="font-extrabold text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-toolbox text-indigo-700"></i>
+                  <span>Materiais Necessários para a Aula</span>
+                </h4>
+                <p class="text-slate-900 bg-slate-50 p-3 rounded-lg border border-slate-300 font-semibold">${p.materiais}</p>
+              </div>
+            ` : ''}
+
+            ${p.metodologia ? `
+              <div>
+                <h4 class="font-extrabold text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-chalkboard-user text-indigo-700"></i>
+                  <span>Metodologia e Desenvolvimento</span>
+                </h4>
+                <p class="text-slate-800 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-300 font-medium">${p.metodologia}</p>
+              </div>
+            ` : ''}
+
+            ${p.avaliacao ? `
+              <div>
+                <h4 class="font-extrabold text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-clipboard-check text-indigo-700"></i>
+                  <span>Avaliação</span>
+                </h4>
+                <p class="text-slate-800 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-300 font-medium">${p.avaliacao}</p>
+              </div>
+            ` : ''}
+
+            ${p.observacoes ? `
+              <div>
+                <h4 class="font-extrabold text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-hands-asl-interpreting text-indigo-700"></i>
+                  <span>Anotações e Adaptações Pedagógicas (Libras / Acessibilidade)</span>
+                </h4>
+                <p class="text-amber-950 whitespace-pre-line bg-amber-50 p-3 rounded-lg border border-amber-300 font-medium">${p.observacoes}</p>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="mt-8 pt-4 border-t border-slate-300 text-center text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            Desenvolvido por Ricardo Wagner
+          </div>
+        `;
+      }
+
+      function imprimirPlanoSelecionadoInline() {
+        if (!planoSelecionadoId) return;
+        visualizarPlano(planoSelecionadoId);
+        window.print();
       }
 
       function visualizarPlano(id) {
@@ -1990,8 +2290,13 @@
       function excluirPlano(id) {
         if (!id) return;
         
-        // Remove localmente e atualiza Firebase
         delete planosSalvos[id];
+        if (planoSelecionadoId === id) {
+          planoSelecionadoId = null;
+          document.getElementById('painelSemSelecao')?.classList.remove('hidden');
+          document.getElementById('painelVisualizacaoInline')?.classList.add('hidden');
+        }
+
         renderizarListaPlanos();
 
         db.ref('planosDeAula/' + id).remove()
